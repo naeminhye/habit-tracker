@@ -25,7 +25,6 @@ extension FocusTimerView {
 
 struct FocusTimerView: View {
     @Bindable var habit: Habit
-    var existingSession: FocusSession? = nil
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     
@@ -40,9 +39,7 @@ struct FocusTimerView: View {
     @State private var adjustedMinutes: Int = 0
     @State private var hasStarted = false
     
-    private var totalSeconds: Int {
-        existingSession?.durationSeconds ?? (adjustedMinutes * 60)
-    }
+    private var totalSeconds: Int { adjustedMinutes * 60 }
     private var isDeep: Bool { habit.deepFocusEnabled }
     private var isRunning: Bool {
         session != nil && session?.isCompleted == false
@@ -60,16 +57,9 @@ struct FocusTimerView: View {
                 sessionView
             }
         }
-        .onAppear {
-            adjustedMinutes = habit.focusDurationMinutes
-            if existingSession != nil {
-                // Skip pre-session screen, jump straight to timer
-                hasStarted = true
-                startSession()
-            }
-        }
+        .onAppear { adjustedMinutes = habit.focusDurationMinutes }
         .onDisappear { timer?.invalidate() }
-        .interactiveDismissDisabled(hasStarted && isRunning && isDeep)
+        .interactiveDismissDisabled(hasStarted && isRunning)
         .confirmationDialog(
             "End focus session?",
             isPresented: $showingCancel,
@@ -160,17 +150,10 @@ struct FocusTimerView: View {
                     Text(habit.name)
                         .font(DSFont.title(22))
                         .foregroundStyle(Color.dsIndigo)
-                        .lineLimit(2)                    // ← max 2 lines
-                        .multilineTextAlignment(.center)
-                        .truncationMode(.tail)
-
                     if !habit.habitDescription.isEmpty {
                         Text(habit.habitDescription)
                             .font(DSFont.body())
                             .foregroundStyle(Color.dsLabel)
-                            .lineLimit(2)                // ← max 2 lines
-                            .multilineTextAlignment(.center)
-                            .truncationMode(.tail)
                     }
                     DSStreakBadge(streak: habit.currentStreak, large: true)
                 }
@@ -324,16 +307,6 @@ struct FocusTimerView: View {
                         color: isDeep ? habit.accentColor : habit.accentColor,
                         size: 36
                     )
-                    if !isDeep {
-                        Button {
-                            pauseAndExit()
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 22))
-                                .foregroundStyle(Color.dsLabel)
-                        }
-                        .buttonStyle(.plain)
-                    }
                     VStack(alignment: .leading, spacing: 1) {
                         Text(habit.name)
                             .font(DSFont.bodyBold())
@@ -597,18 +570,13 @@ struct FocusTimerView: View {
     // MARK: - Session logic
     
     private func startSession() {
-        if let existing = existingSession {
-            // Resume existing paused session
-            session = existing
-            isPaused = false
-            startTimer()
-            hasStarted = true
-        } else {
-            // Create new session
-            let s = FocusSession(habit: habit, durationSeconds: totalSeconds)
-            context.insert(s)
-            session = s
-            startTimer()
+        let s = FocusSession(habit: habit, durationSeconds: totalSeconds)
+        context.insert(s)
+        session = s
+        startTimer()
+
+        if isDeep {
+            requestGuidedAccess()
         }
     }
     
@@ -625,14 +593,6 @@ struct FocusTimerView: View {
     private func togglePause() {
         isPaused.toggle()
         pulseRing = !isPaused
-        if isPaused {
-            // Stop timer but keep session alive with current elapsedSeconds
-            timer?.invalidate()
-            timer = nil
-        } else {
-            // Resume from where we left off
-            startTimer()
-        }
     }
     
     private func timerCompleted() {
@@ -654,24 +614,12 @@ struct FocusTimerView: View {
     
     private func endSession(completed: Bool) {
         timer?.invalidate()
-        timer = nil
         if completed, let s = session {
             s.markCompleted()
             if !habit.isCompletedToday { habit.toggleToday() }
-        } else if let s = session, !completed {
-            // Only delete if user explicitly cancels (not pause/exit)
+        } else if let s = session {
             context.delete(s)
         }
-        if isDeep { endGuidedAccess() }
-        dismiss()
-    }
-    
-    private func pauseAndExit() {
-        isPaused = true
-        timer?.invalidate()
-        timer = nil
-        // Session stays in SwiftData with current elapsedSeconds intact
-        // activeFocusSession in HabitRowView will pick it up automatically
         if isDeep { endGuidedAccess() }
         dismiss()
     }

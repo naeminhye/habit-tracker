@@ -14,9 +14,7 @@ struct FocusTabView: View {
     @State private var selectedHabit: Habit? = nil
 
     var todaySessions: [FocusSession] {
-        sessions.filter {
-            Calendar.current.isDateInToday($0.startedAt)
-        }
+        sessions.filter { Calendar.current.isDateInToday($0.startedAt) }
     }
 
     var todayFocusMinutes: Int {
@@ -309,25 +307,24 @@ struct DSFocusHabitCard: View {
 struct DSSessionRow: View {
     let session: FocusSession
 
-    private var statusColor: Color {
-        if session.isCompleted { return Color.dsMint }
-        if session.elapsedSeconds > 0 { return Color.dsGold }
-        return Color.dsBorder
-    }
-
     var body: some View {
         HStack(spacing: DSSpacing.md) {
             // Emoji circle
             ZStack {
                 Circle()
-                    .fill(statusColor.opacity(0.1))
+                    .fill(session.isCompleted
+                          ? Color.dsMint.opacity(0.1)
+                          : Color.dsBorder.opacity(0.4))
                     .frame(width: 44, height: 44)
                 Circle()
-                    .strokeBorder(statusColor, lineWidth: 1.5)
+                    .strokeBorder(
+                        session.isCompleted ? ThemeManager.shared.accentColor : Color.dsBorder,
+                        lineWidth: 1.5
+                    )
                     .frame(width: 44, height: 44)
                 Text(session.habitEmoji)
                     .font(.system(size: 20))
-                    .opacity(session.isCompleted ? 1 : 0.6)
+                    .opacity(session.isCompleted ? 1 : 0.4)
             }
 
             // Info
@@ -335,7 +332,7 @@ struct DSSessionRow: View {
                 Text(session.habitName)
                     .font(DSFont.bodyBold())
                     .foregroundStyle(
-                        session.isCompleted ? Color.dsIndigo : Color.dsPrimaryText
+                        session.isCompleted ? Color.dsIndigo : Color.dsLabel
                     )
                 HStack(spacing: DSSpacing.sm) {
                     Text(session.formattedDuration)
@@ -348,13 +345,6 @@ struct DSSessionRow: View {
                     ))
                     .font(DSFont.caption())
                     .foregroundStyle(Color.dsLabel)
-
-                    // Show elapsed if paused
-                    if !session.isCompleted && session.elapsedSeconds > 0 {
-                        Text("· \(session.elapsedSeconds / 60)m elapsed")
-                            .font(DSFont.caption())
-                            .foregroundStyle(Color.dsGold)
-                    }
                 }
             }
 
@@ -368,14 +358,6 @@ struct DSSessionRow: View {
                     Text("Done")
                         .font(DSFont.bodyBold(12))
                         .foregroundStyle(Color.dsMint)
-                }
-            } else if session.elapsedSeconds > 0 {
-                HStack(spacing: 4) {
-                    Image(systemName: "pause.circle.fill")
-                        .foregroundStyle(Color.dsGold)
-                    Text("Paused")
-                        .font(DSFont.bodyBold(12))
-                        .foregroundStyle(Color.dsGold)
                 }
             } else {
                 Text("Cancelled")
@@ -391,7 +373,11 @@ struct DSSessionRow: View {
                     in: RoundedRectangle(cornerRadius: DSRadius.md))
         .overlay(
             RoundedRectangle(cornerRadius: DSRadius.md)
-                .strokeBorder(statusColor.opacity(0.2), lineWidth: 1)
+                .strokeBorder(
+                    session.isCompleted
+                        ? Color.dsMint.opacity(0.2) : Color.dsBorder,
+                    lineWidth: 1
+                )
         )
     }
 }

@@ -58,10 +58,6 @@ final class FocusSession {
         return rm > 0 ? "\(h)h \(rm)m" : "\(h)h"
     }
 
-    var isInProgress: Bool {
-        !isCompleted && elapsedSeconds > 0
-    }
-    
     func markCompleted() {
         isCompleted = true
         completedAt = Date()

@@ -39,21 +39,10 @@ struct ContentView: View {
     @State private var showingStandBy = false
     @State private var editingHabit: Habit? = nil
     @State private var pendingUnlocks: [MilestoneUnlock] = []
-    @State private var habitToDelete: Habit? = nil
-    @State private var showingDeleteConfirm = false
-    @State private var habitToUndone: Habit? = nil
-    @State private var showingUndoneConfirm = false
     
     var dueHabits: [Habit] {
         habits.filter { habit in
-            guard habit.isDueToday && !habit.isCompletedToday else { return false }
-            return matchesSearch(habit) && matchesFilter(habit)
-        }
-    }
-
-    var completedHabits: [Habit] {
-        habits.filter { habit in
-            guard habit.isCompletedToday else { return false }
+            guard habit.isDueToday else { return false }
             return matchesSearch(habit) && matchesFilter(habit)
         }
     }
@@ -64,14 +53,14 @@ struct ContentView: View {
             return matchesSearch(habit) && matchesFilter(habit)
         }
     }
-    
+
     private func matchesSearch(_ habit: Habit) -> Bool {
         searchText.isEmpty
-        || habit.name.localizedCaseInsensitiveContains(searchText)
-        || habit.habitDescription.localizedCaseInsensitiveContains(searchText)
-        || habit.tags.contains { $0.label.localizedCaseInsensitiveContains(searchText) }
+            || habit.name.localizedCaseInsensitiveContains(searchText)
+            || habit.habitDescription.localizedCaseInsensitiveContains(searchText)
+            || habit.tags.contains { $0.label.localizedCaseInsensitiveContains(searchText) }
     }
-    
+
     private func matchesFilter(_ habit: Habit) -> Bool {
         switch activeFilter {
         case .all:        return true
@@ -81,8 +70,8 @@ struct ContentView: View {
         }
     }
     
-    var completedCount: Int { habits.filter(\.isCompletedToday).count }
-    var totalCount: Int { habits.filter(\.isDueToday).count }
+    var completedCount: Int { dueHabits.filter(\.isCompletedToday).count }
+    var totalCount: Int { dueHabits.count }
     var progress: Double {
         totalCount > 0 ? Double(completedCount) / Double(totalCount) : 0
     }
@@ -102,13 +91,13 @@ struct ContentView: View {
                 // Main content
                 ZStack(alignment: .bottomTrailing) {
                     Color.dsSurface.ignoresSafeArea()
-                    
+
                     if habits.isEmpty {
                         emptyState
                     } else {
                         habitList
                     }
-                    
+
                     // FAB
                     Button {
                         showingAddHabit = true
@@ -129,7 +118,7 @@ struct ContentView: View {
                     .padding(.trailing, DSSpacing.lg)
                     .padding(.bottom, DSSpacing.lg)
                 }
-                
+
                 // Milestone banner — floats on top of everything
                 if let first = pendingUnlocks.first {
                     MilestoneBannerView(unlock: first) {
@@ -147,51 +136,6 @@ struct ContentView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbarContent }
             .searchable(text: $searchText, prompt: "Search habits…")
-            // Delete confirm
-            .confirmationDialog(
-                "Delete \"\(habitToDelete?.name ?? "this habit")\"?",
-                isPresented: $showingDeleteConfirm,
-                titleVisibility: .visible
-            ) {
-                Button("Delete", role: .destructive) {
-                    if let habit = habitToDelete {
-                        Task {
-                            NotificationManager.shared.cancel(for: habit)
-                            if let goal = habit.goal {
-                                SharedStore.container.mainContext.delete(goal)
-                            }
-                            SharedStore.container.mainContext.delete(habit)
-                            WidgetCenter.shared.reloadAllTimelines()
-                            habitToDelete = nil
-                        }
-                    }
-                }
-                Button("Cancel", role: .cancel) { habitToDelete = nil }
-            } message: {
-                Text("This will permanently delete the habit and all its history.")
-            }
-            // Undo confirm
-            .confirmationDialog(
-                "Undo \"\(habitToUndone?.name ?? "this habit")\"?",
-                isPresented: $showingUndoneConfirm,
-                titleVisibility: .visible
-            ) {
-                Button("Yes, undo it", role: .destructive) {
-                    if let habit = habitToUndone {
-                        withAnimation {
-                            habit.completedDates.removeAll {
-                                Calendar.current.isDateInToday($0)
-                            }
-                            habit.setDecoration(nil, for: Date())
-                            WidgetCenter.shared.reloadAllTimelines()
-                        }
-                        habitToUndone = nil
-                    }
-                }
-                Button("Keep it", role: .cancel) { habitToUndone = nil }
-            } message: {
-                Text("Did you accidentally mark this habit as done?")
-            }
             .sheet(isPresented: $showingAddHabit) { AddHabitView() }
             .sheet(item: $editingHabit) { habit in
                 AddHabitView(editingHabit: habit)
@@ -223,242 +167,90 @@ struct ContentView: View {
     // MARK: - Habit list
     
     private var habitList: some View {
-        List {
-            // Streak + progress
-            Section {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 0) {
+                // Streak + progress
                 VStack(spacing: DSSpacing.sm) {
                     StreakStripView(habits: habits)
                     progressBar
                 }
-                .listRowInsets(EdgeInsets())
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-            }
+                .padding(.horizontal, DSSpacing.lg)
+                .padding(.top, DSSpacing.md)
+                .padding(.bottom, DSSpacing.lg)
 
-            // Filter bar
-            Section {
                 filterBar
-                    .listRowInsets(EdgeInsets())
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-            }
+                    .padding(.bottom, DSSpacing.md)
 
-            // Pending habits
-            if !dueHabits.isEmpty {
-                Section {
-                    ForEach(dueHabits) { habit in
-                        HabitRowView(
-                            habit: habit,
-                            onEdit: { editingHabit = habit },
-                            onMilestoneUnlocked: { unlocks in
-                                pendingUnlocks.append(contentsOf: unlocks)
-                            }
-                        )
-                        .listRowInsets(EdgeInsets(
-                            top: 4, leading: 16,
-                            bottom: 4, trailing: 16
-                        ))
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                        .swipeActions(edge: .trailing,
-                                      allowsFullSwipe: false) {
-                            deleteButton(habit)
-                            editButton(habit)
-                        }
-                        .swipeActions(edge: .leading,
-                                      allowsFullSwipe: true) {
-                            editButton(habit)
-                        }
-                    }
-                }
-            }
-
-            // Completed today
-            if !completedHabits.isEmpty {
-                Section {
-                    ForEach(completedHabits) { habit in
-                        HabitRowView(
-                            habit: habit,
-                            onEdit: { editingHabit = habit },
-                            onMilestoneUnlocked: { unlocks in
-                                pendingUnlocks.append(contentsOf: unlocks)
-                            }
-                        )
-                        .listRowInsets(EdgeInsets(
-                            top: 4, leading: 16,
-                            bottom: 4, trailing: 16
-                        ))
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                        .swipeActions(edge: .trailing,
-                                      allowsFullSwipe: false) {
-                            deleteButton(habit)
-                            editButton(habit)
-                        }
-                        .swipeActions(edge: .leading,
-                                      allowsFullSwipe: false) {
-                            undoButton(habit)
-                        }
-                    }
-                } header: {
-                    Text("Completed")
-                        .font(DSFont.capsLabel())
-                        .foregroundStyle(Color.dsLabel)
-                        .kerning(0.8)
-                }
-            }
-
-            // Upcoming
-            if !upcomingHabits.isEmpty {
-                Section {
-                    ForEach(upcomingHabits) { habit in
-                        upcomingRow(habit)
-                            .listRowInsets(EdgeInsets(
-                                top: 4, leading: 16,
-                                bottom: 4, trailing: 16
-                            ))
-                            .listRowBackground(Color.clear)
-                            .listRowSeparator(.hidden)
-                            .swipeActions(edge: .trailing,
-                                          allowsFullSwipe: false) {
-                                deleteButton(habit)
-                                editButton(habit)
-                            }
-                    }
-                } header: {
-                    Text("Upcoming")
-                        .font(DSFont.capsLabel())
-                        .foregroundStyle(Color.dsLabel)
-                        .kerning(0.8)
-                }
-            }
-
-            // Empty state
-            if dueHabits.isEmpty &&
-               completedHabits.isEmpty &&
-               upcomingHabits.isEmpty {
-                Section {
+                // Due today
+                if dueHabits.isEmpty && upcomingHabits.isEmpty {
                     emptyFilterState
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
+                        .padding(.top, DSSpacing.xxl)
+                } else {
+                    if !dueHabits.isEmpty {
+                        LazyVStack(spacing: DSSpacing.sm) {
+                            ForEach(dueHabits) { habit in
+                                habitRow(habit)
+                            }
+                        }
+                        .padding(.bottom, DSSpacing.sm)
+                    }
+
+                    // Upcoming section
+                    if !upcomingHabits.isEmpty {
+                        VStack(alignment: .leading, spacing: DSSpacing.md) {
+                            DSSectionHeader(
+                                title: "Upcoming",
+                                count: upcomingHabits.count
+                            )
+                            .padding(.horizontal, DSSpacing.lg)
+
+                            LazyVStack(spacing: DSSpacing.sm) {
+                                ForEach(upcomingHabits) { habit in
+                                    upcomingRow(habit)
+                                }
+                            }
+                        }
+                        .padding(.top, DSSpacing.sm)
+                    }
                 }
+
+                Spacer().frame(height: 100)
             }
-
-            // Bottom padding
-            Section {
-                Color.clear.frame(height: 80)
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-            }
-        }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .background(Color.dsSurface)
-    }
-
-    // MARK: - Swipe buttons
-
-    private func deleteButton(_ habit: Habit) -> some View {
-        Button(role: .destructive) {
-            habitToDelete = habit
-            showingDeleteConfirm = true
-        } label: {
-            Label("Delete", systemImage: "trash")
         }
     }
 
-    private func editButton(_ habit: Habit) -> some View {
-        Button {
-            editingHabit = habit
-        } label: {
-            Label("Edit", systemImage: "pencil")
-        }
-        .tint(Color.dsIndigo)
-    }
-
-    private func undoButton(_ habit: Habit) -> some View {
-        Button {
-            habitToUndone = habit
-            showingUndoneConfirm = true
-        } label: {
-            Label("Undo", systemImage: "arrow.uturn.backward")
-        }
-        .tint(Color.dsGold)
-    }
-    
-    private func completedRow(_ habit: Habit) -> some View {
-        HabitRowView(
-            habit: habit,
-            onEdit: { editingHabit = habit },
-            onMilestoneUnlocked: { unlocks in
-                pendingUnlocks.append(contentsOf: unlocks)
-            }
-        )
-        .padding(.horizontal, DSSpacing.lg)
-        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-            Button(role: .destructive) {
-                habitToDelete = habit
-                showingDeleteConfirm = true
-            } label: {
-                Label("Delete", systemImage: "trash")
-            }
-
-            Button {
-                editingHabit = habit
-            } label: {
-                Label("Edit", systemImage: "pencil")
-            }
-            .tint(Color.dsIndigo)
-        }
-        .swipeActions(edge: .leading, allowsFullSwipe: false) {
-            // Swipe right to undo
-            Button {
-                habitToUndone = habit
-                showingUndoneConfirm = true
-            } label: {
-                Label("Undo", systemImage: "arrow.uturn.backward")
-            }
-            .tint(Color.dsGold)
-        }
-    }
-    
     // MARK: - Due today row
+
     private func habitRow(_ habit: Habit) -> some View {
         HabitRowView(
-            habit: habit,
-            onEdit: { editingHabit = habit },
-            onMilestoneUnlocked: { unlocks in
-                pendingUnlocks.append(contentsOf: unlocks)
+                habit: habit,
+                onEdit: { editingHabit = habit },
+                onMilestoneUnlocked: { unlocks in
+                    pendingUnlocks.append(contentsOf: unlocks)
+                }
+            )
+            .padding(.horizontal, DSSpacing.lg)
+            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                Button(role: .destructive) {
+                    Task {
+                        await NotificationManager.shared.cancel(for: habit)
+                        context.delete(habit)
+                        WidgetCenter.shared.reloadAllTimelines()
+                    }
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                }
             }
-        )
-        .padding(.horizontal, DSSpacing.lg)
-        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-            Button(role: .destructive) {
-                habitToDelete = habit
-                showingDeleteConfirm = true
-            } label: {
-                Label("Delete", systemImage: "trash")
+            .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                Button { editingHabit = habit } label: {
+                    Label("Edit", systemImage: "pencil")
+                }
+                .tint(Color.dsIndigo)
             }
-            
-            Button {
-                editingHabit = habit
-            } label: {
-                Label("Edit", systemImage: "pencil")
-            }
-            .tint(Color.dsIndigo)
-        }
-        .swipeActions(edge: .leading, allowsFullSwipe: true) {
-            Button {
-                editingHabit = habit
-            } label: {
-                Label("Edit", systemImage: "pencil")
-            }
-            .tint(Color.dsIndigo)
-        }
     }
-    
-    // MARK: - Upcoming row
-    
+
+    // MARK: - Upcoming row (dimmed)
+
     private func upcomingRow(_ habit: Habit) -> some View {
         HStack(spacing: DSSpacing.md) {
             DSHabitAvatar(
@@ -473,7 +265,7 @@ struct ContentView: View {
                 Text(habit.name)
                     .font(DSFont.bodyBold())
                     .foregroundStyle(Color.dsLabel)
-                    .lineLimit(1)
+
                 if let next = habit.nextDueDate {
                     HStack(spacing: 4) {
                         Image(systemName: "calendar")
@@ -486,6 +278,7 @@ struct ContentView: View {
             }
 
             Spacer()
+
             DSPill(text: habit.frequencyLabel, color: Color.dsLabel)
         }
         .padding(DSSpacing.md)
@@ -496,6 +289,23 @@ struct ContentView: View {
                 .strokeBorder(Color.dsBorder, lineWidth: 1)
         )
         .opacity(0.6)
+        .padding(.horizontal, DSSpacing.lg)
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button(role: .destructive) {
+                Task {
+                    await NotificationManager.shared.cancel(for: habit)
+                    context.delete(habit)
+                }
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+        }
+        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+            Button { editingHabit = habit } label: {
+                Label("Edit", systemImage: "pencil")
+            }
+            .tint(Color.dsIndigo)
+        }
     }
     
     private var progressBar: some View {
