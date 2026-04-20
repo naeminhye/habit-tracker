@@ -8,6 +8,7 @@
 import SwiftUI
 import SwiftData
 
+@MainActor
 struct TagManagerView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss

@@ -35,52 +35,64 @@ struct MonthCalendarView: View {
             Button {
                 withAnimation(.spring(response: 0.35)) {
                     displayedMonth = Calendar.current.date(
-                        byAdding: .month, value: -1, to: displayedMonth
-                    )!
+                        byAdding: .month, value: -1, to: displayedMonth)!
                 }
             } label: {
                 Image(systemName: "chevron.left")
-                    .font(.body.bold())
-                    .padding(8)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(Color.dsIndigo)
+                    .frame(width: 32, height: 32)
+                    .background(Color.dsBackground, in: Circle())
+                    .overlay(Circle().strokeBorder(Color.dsBorder, lineWidth: 1))
             }
+            .buttonStyle(.plain)
 
             Spacer()
 
             Text(displayedMonth.formatted(.dateTime.month(.wide).year()))
-                .font(.headline)
+                .font(DSFont.title(16))
+                .foregroundStyle(Color.dsIndigo)
 
             Spacer()
 
             Button {
                 withAnimation(.spring(response: 0.35)) {
                     displayedMonth = Calendar.current.date(
-                        byAdding: .month, value: 1, to: displayedMonth
-                    )!
+                        byAdding: .month, value: 1, to: displayedMonth)!
                 }
             } label: {
                 Image(systemName: "chevron.right")
-                    .font(.body.bold())
-                    .padding(8)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(Color.dsIndigo)
+                    .frame(width: 32, height: 32)
+                    .background(Color.dsBackground, in: Circle())
+                    .overlay(Circle().strokeBorder(Color.dsBorder, lineWidth: 1))
             }
-            .disabled(Calendar.current.isDate(displayedMonth, equalTo: Calendar.current.startOfMonth(for: Date()), toGranularity: .month))
+            .buttonStyle(.plain)
+            .disabled(Calendar.current.isDate(
+                displayedMonth,
+                equalTo: Calendar.current.startOfMonth(for: Date()),
+                toGranularity: .month
+            ))
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 4)
+        .padding(.horizontal, DSSpacing.md)
+        .padding(.vertical, DSSpacing.sm)
     }
 
     // MARK: - Weekday header
 
     private var weekdayHeader: some View {
         HStack(spacing: 0) {
-            ForEach(["Sun","Mon","Tue","Wed","Thu","Fri","Sat"], id: \.self) { d in
+            ForEach(["SUN","MON","TUE","WED","THU","FRI","SAT"], id: \.self) { d in
                 Text(d)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
+                    .font(DSFont.capsLabel(9))
+                    .foregroundStyle(Color.dsLabel)
+                    .kerning(0.5)
                     .frame(maxWidth: .infinity)
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
+        .padding(.horizontal, DSSpacing.md)
+        .padding(.vertical, DSSpacing.sm)
     }
 
     // MARK: - Calendar grid
@@ -161,64 +173,81 @@ struct DayCell: View {
     private var completedHabits: [Habit] {
         habits.filter { $0.isCompleted(on: date) }
     }
-
     private var isFuture: Bool {
         date > Calendar.current.startOfDay(for: Date())
     }
+    private var allDone: Bool {
+        !habits.isEmpty && completedHabits.count == habits.count
+    }
 
     var body: some View {
-        VStack(spacing: 2) {
-            // Day number
+        VStack(spacing: 3) {
+            // Day circle
             ZStack {
-                if isToday {
+                Circle()
+                    .fill(circleFill)
+                    .frame(width: 30, height: 30)
+
+                if isToday && !allDone {
                     Circle()
-                        .fill(Color.accentColor)
-                        .frame(width: 26, height: 26)
-                } else if isSelected {
-                    Circle()
-                        .fill(Color.accentColor.opacity(0.15))
-                        .frame(width: 26, height: 26)
+                        .strokeBorder(Color.dsAccent, lineWidth: 1.5)
+                        .frame(width: 30, height: 30)
                 }
+
                 Text("\(Calendar.current.component(.day, from: date))")
-                    .font(.system(size: 13, weight: isToday ? .bold : .regular))
-                    .foregroundStyle(
-                        isToday ? .white :
-                        isFuture ? Color.secondary.opacity(0.4) : .primary
-                    )
+                    .font(.system(
+                        size: 13,
+                        weight: isToday || allDone ? .bold : .regular
+                    ))
+                    .foregroundStyle(numberColor)
             }
 
-            // Sticker row — up to 3 habits shown
+            // Sticker row
             if completedHabits.isEmpty {
                 Rectangle()
                     .fill(Color.clear)
-                    .frame(height: 20)
+                    .frame(height: 16)
             } else {
                 HStack(spacing: 1) {
                     ForEach(completedHabits.prefix(3)) { habit in
                         let deco = habit.decoration(for: date)
-                        Text(deco ?? habit.emoji)
-                            .font(.system(size: completedHabits.count > 2 ? 10 : 13))
-                            .onTapGesture {
-                                onDecorateTap(habit)
-                            }
+                        StickerText(
+                            text: deco ?? habit.emoji,
+                            fontSize: completedHabits.count > 2 ? 9 : 11,
+                            outlineWidth: 1
+                        )
+                        .onTapGesture { onDecorateTap(habit) }
                     }
                     if completedHabits.count > 3 {
                         Text("+\(completedHabits.count - 3)")
-                            .font(.system(size: 8))
-                            .foregroundStyle(.secondary)
+                            .font(DSFont.caption(8))
+                            .foregroundStyle(Color.dsLabel)
                     }
                 }
-                .frame(height: 20)
+                .frame(height: 16)
             }
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 4)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(isSelected ? Color.accentColor.opacity(0.08) : Color.clear)
+                .fill(isSelected ? Color.dsIndigo.opacity(0.06) : Color.clear)
         )
         .onTapGesture { onTap() }
-        .opacity(isFuture ? 0.4 : 1.0)
+        .opacity(isFuture ? 0.3 : 1.0)
+    }
+
+    private var circleFill: Color {
+        if allDone { return Color.dsIndigo }
+        if isSelected { return Color.dsIndigo.opacity(0.1) }
+        return Color.clear
+    }
+
+    private var numberColor: Color {
+        if allDone { return .white }
+        if isToday { return Color.dsAccent }
+        if isFuture { return Color.dsLabel.opacity(0.4) }
+        return Color.dsPrimaryText
     }
 }
 

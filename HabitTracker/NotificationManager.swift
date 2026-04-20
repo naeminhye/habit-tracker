@@ -67,4 +67,24 @@ final class NotificationManager {
             schedule(for: habit)
         }
     }
+    
+    // MARK: - Milestone notification 
+    func scheduleMilestoneNotification(unlock: MilestoneUnlock) {
+        let content = UNMutableNotificationContent()
+        content.title = "\(unlock.milestone.emoji) \(unlock.milestone.title)"
+        if let badge = unlock.badge {
+            content.body = "You unlocked the \(badge.name) badge! 🏅"
+        } else {
+            content.body = "Milestone reached on \(unlock.habitEmoji) \(unlock.habitName)!"
+        }
+        content.sound = .defaultRingtone
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+        let request = UNNotificationRequest(
+            identifier: "milestone-\(unlock.id.uuidString)",
+            content: content,
+            trigger: trigger
+        )
+        UNUserNotificationCenter.current().add(request)
+    }
 }

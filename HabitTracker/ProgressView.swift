@@ -20,165 +20,152 @@ enum ProgressViewMode {
 struct HabitProgressView: View {
     @Query var habits: [Habit]
     @State private var viewMode: ProgressViewMode = .month
-    @State private var shareSnapshot: UIImage? = nil
-    @State private var showingShare = false
-    @State private var theme = ThemeManager.shared
     @State private var showingShareProgress = false
 
     var body: some View {
         NavigationStack {
-            Group {
-                if viewMode == .month {
-                    MonthCalendarView()
-                } else {
-                    habitHeatmapView
-                }
-            }
-            .navigationTitle("Progress")
-            .toolbar {
-                // View mode switcher — top left
-                ToolbarItem(placement: .navigationBarLeading) {
-                    viewModePicker
-                }
-                // Share button — top right
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        showingShareProgress = true
-                    } label: {
-                        Image(systemName: "square.and.arrow.up")
+            ZStack {
+                Color.dsSurface.ignoresSafeArea()
+                VStack(spacing: 0) {
+                    // Custom nav bar
+                    navBar
+                    // Stats strip
+                    statsStrip
+                        .padding(.horizontal, DSSpacing.lg)
+                        .padding(.vertical, DSSpacing.md)
+                    DSDivider()
+                    // Content
+                    if viewMode == .month {
+                        MonthCalendarView()
+                    } else {
+                        habitHeatmapView
                     }
                 }
             }
-            .sheet(isPresented: $showingShare) {
-                if let img = shareSnapshot {
-                    ShareSheet(image: img)
-                }
-            }
+            .navigationBarHidden(true)
             .sheet(isPresented: $showingShareProgress) {
                 ShareProgressView()
             }
         }
     }
 
-    // MARK: - View mode picker
+    // MARK: - Nav bar
 
-    private var viewModePicker: some View {
-        HStack(spacing: 0) {
-            modeButton(mode: .month, icon: "calendar")
-            modeButton(mode: .habits, icon: "chart.bar.fill")
+    private var navBar: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("PROGRESS")
+                    .font(DSFont.capsLabel())
+                    .foregroundStyle(Color.dsLabel)
+                    .kerning(1)
+                Text(Date().formatted(.dateTime.month(.wide).year()))
+                    .font(DSFont.title(20))
+                    .foregroundStyle(Color.dsIndigo)
+            }
+
+            Spacer()
+
+            HStack(spacing: DSSpacing.sm) {
+                // View switcher
+                HStack(spacing: 2) {
+                    modeButton(mode: .month, icon: "calendar")
+                    modeButton(mode: .habits, icon: "chart.bar.fill")
+                }
+                .padding(3)
+                .background(Color.dsBorder, in: Capsule())
+
+                // Share
+                Button {
+                    showingShareProgress = true
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(Color.dsIndigo)
+                        .frame(width: 36, height: 36)
+                        .background(Color.dsBackground, in: Circle())
+                        .overlay(Circle().strokeBorder(Color.dsBorder, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+            }
         }
-        .background(Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
+        .padding(.horizontal, DSSpacing.lg)
+        .padding(.top, DSSpacing.md)
+        .padding(.bottom, DSSpacing.sm)
     }
+
+    // MARK: - Mode button
 
     private func modeButton(mode: ProgressViewMode, icon: String) -> some View {
         Button {
             withAnimation(.spring(response: 0.3)) { viewMode = mode }
         } label: {
             Image(systemName: icon)
-                .font(.subheadline)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(viewMode == mode ? .white : Color.dsLabel)
+                .frame(width: 34, height: 28)
                 .background(
-                    viewMode == mode
-                        ? Color.accentColor.opacity(0.2)
-                        : Color.clear,
-                    in: RoundedRectangle(cornerRadius: 7)
-                )
-                .foregroundStyle(
-                    viewMode == mode ? Color.accentColor : Color.secondary
+                    viewMode == mode ? Color.dsIndigo : Color.clear,
+                    in: Capsule()
                 )
         }
         .buttonStyle(.plain)
     }
 
+    // MARK: - Stats strip
+
+    private var statsStrip: some View {
+        let best = habits.map(\.currentStreak).max() ?? 0
+        let done = habits.filter(\.isCompletedToday).count
+        let total = habits.count
+        let totalCheckIns = habits.flatMap(\.completedDates).count
+
+        return HStack(spacing: 0) {
+            DSStatBadge(
+                value: "\(done)/\(total)",
+                label: "TODAY",
+                color: .dsCoral
+            )
+            dsVerticalDivider
+            DSStatBadge(
+                value: "\(best)",
+                label: "BEST STREAK",
+                color: .dsGold,
+                icon: "flame.fill"
+            )
+            dsVerticalDivider
+            DSStatBadge(
+                value: "\(totalCheckIns)",
+                label: "ALL TIME",
+                color: .dsIndigo
+            )
+        }
+        .padding(DSSpacing.md)
+        .background(Color.dsBackground, in: RoundedRectangle(cornerRadius: DSRadius.md))
+        .overlay(
+            RoundedRectangle(cornerRadius: DSRadius.md)
+                .strokeBorder(Color.dsBorder, lineWidth: 1)
+        )
+    }
+
+    private var dsVerticalDivider: some View {
+        Rectangle()
+            .fill(Color.dsBorder)
+            .frame(width: 1, height: 36)
+    }
+
     // MARK: - Habit heatmap view
 
     private var habitHeatmapView: some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                overallStatsCard
-                    .padding(.horizontal)
-                    .padding(.top, 8)
-
+        ScrollView(showsIndicators: false) {
+            LazyVStack(spacing: DSSpacing.md) {
                 ForEach(habits) { habit in
                     HabitProgressCard(habit: habit)
-                        .padding(.horizontal)
+                        .padding(.horizontal, DSSpacing.lg)
                 }
             }
-            .padding(.bottom, 24)
+            .padding(.vertical, DSSpacing.md)
+            .padding(.bottom, DSSpacing.xxl)
         }
-    }
-
-    // MARK: - Overall stats card
-
-    private var overallStatsCard: some View {
-        let best = habits.map(\.currentStreak).max() ?? 0
-        let totalDone = habits.filter(\.isCompletedToday).count
-
-        return HStack(spacing: 0) {
-            statCell(value: "\(totalDone)/\(habits.count)", label: "Today")
-            Divider().frame(height: 40)
-            statCell(value: "\(best)🔥", label: "Best streak")
-            Divider().frame(height: 40)
-            statCell(value: "\(habits.count)", label: "Habits")
-        }
-        .padding()
-        .frame(maxWidth: .infinity)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
-    }
-
-    private func statCell(value: String, label: String) -> some View {
-        VStack(spacing: 4) {
-            Text(value).font(.title2.bold())
-            Text(label).font(.caption).foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-    }
-
-    // MARK: - Share / Snapshot
-
-    @MainActor
-    private func takeSnapshot() {
-        let view = snapshotView
-        let renderer = ImageRenderer(content: view)
-        renderer.scale = UIScreen.main.scale
-        if let img = renderer.uiImage {
-            shareSnapshot = img
-            showingShare = true
-        }
-    }
-
-    @ViewBuilder
-    private var snapshotView: some View {
-        VStack(spacing: 16) {
-            HStack {
-                Text("My Habit Progress")
-                    .font(.title2.bold())
-                Spacer()
-                Text(Date().formatted(date: .abbreviated, time: .omitted))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-
-            if viewMode == .month {
-                MonthCalendarView()
-                    .frame(height: 420)
-            } else {
-                ForEach(habits.prefix(4)) { habit in
-                    HabitProgressCard(habit: habit)
-                }
-            }
-
-            HStack {
-                Spacer()
-                Text("Made with HabitTracker")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-            }
-        }
-        .padding(20)
-        .background(Color(.systemBackground))
-        .frame(width: 390)
     }
 }
 
@@ -208,14 +195,20 @@ struct HabitProgressCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: DSSpacing.md) {
             headerRow
             weekdayLabels
             heatmapGrid
+            DSDivider()
             completionBar
         }
-        .padding()
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .padding(DSSpacing.md)
+        .background(Color.dsBackground,
+                    in: RoundedRectangle(cornerRadius: DSRadius.md))
+        .overlay(
+            RoundedRectangle(cornerRadius: DSRadius.md)
+                .strokeBorder(Color.dsBorder, lineWidth: 1)
+        )
         .sheet(item: $decoratingDate) { item in
             DecorationPickerView(date: item.date, habit: habit)
         }
@@ -224,29 +217,39 @@ struct HabitProgressCard: View {
     // MARK: - Header
 
     private var headerRow: some View {
-        HStack {
-            Text(habit.emoji).font(.title2)
+        HStack(spacing: DSSpacing.sm) {
+            DSHabitAvatar(
+                emoji: habit.emoji,
+                color: habit.accentColor,
+                size: 40,
+                completed: habit.isCompletedToday
+            )
+
             VStack(alignment: .leading, spacing: 2) {
-                Text(habit.name).font(.body.bold())
-                if !habit.habitDescription.isEmpty {
-                    Text(habit.habitDescription)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                } else {
-                    Text(habit.frequencyLabel)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+                Text(habit.name)
+                    .font(DSFont.bodyBold())
+                    .foregroundStyle(Color.dsIndigo)
+                Text(habit.habitDescription.isEmpty
+                     ? habit.frequencyLabel
+                     : habit.habitDescription)
+                    .font(DSFont.caption())
+                    .foregroundStyle(Color.dsLabel)
+                    .lineLimit(1)
             }
+
             Spacer()
-            VStack(alignment: .trailing, spacing: 2) {
-                Label("\(habit.currentStreak)", systemImage: "flame.fill")
-                    .font(.body.bold())
-                    .foregroundStyle(streakColor)
-                Text("day streak")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+
+            VStack(alignment: .trailing, spacing: 4) {
+                DSStreakBadge(streak: habit.currentStreak, large: true)
+                if habit.hasFocusTimer {
+                    HStack(spacing: 3) {
+                        Image(systemName: "timer")
+                            .font(.system(size: 10))
+                        Text("\(habit.focusDurationMinutes)m")
+                            .font(DSFont.caption())
+                    }
+                    .foregroundStyle(Color.dsLabel)
+                }
             }
         }
     }
@@ -257,18 +260,19 @@ struct HabitProgressCard: View {
         HStack(spacing: 4) {
             ForEach(["S","M","T","W","T","F","S"], id: \.self) { d in
                 Text(d)
-                    .font(.system(size: 9))
-                    .foregroundStyle(.secondary)
+                    .font(DSFont.caption(9))
+                    .foregroundStyle(Color.dsLabel)
                     .frame(maxWidth: .infinity)
             }
         }
     }
 
-    // MARK: - Heatmap grid
+    // MARK: - Heatmap
 
     private var heatmapGrid: some View {
         LazyVGrid(
-            columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: columns),
+            columns: Array(repeating: GridItem(.flexible(), spacing: 4),
+                           count: columns),
             spacing: 4
         ) {
             ForEach(Array(days.enumerated()), id: \.element) { index, day in
@@ -286,24 +290,31 @@ struct HabitProgressCard: View {
         let decoration = habit.decoration(for: day)
 
         ZStack {
-            RoundedRectangle(cornerRadius: 4)
-                .fill(cellColor(completed: isCompleted, future: isFuture, index: index))
+            // Cell background
+            RoundedRectangle(cornerRadius: 5)
+                .fill(cellFill(
+                    completed: isCompleted,
+                    future: isFuture,
+                    index: index
+                ))
                 .aspectRatio(1, contentMode: .fit)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 4)
+                    RoundedRectangle(cornerRadius: 5)
                         .strokeBorder(
-                            isToday ? Color.accentColor : Color.clear,
+                            isToday ? Color.dsAccent : Color.clear,
                             lineWidth: 1.5
                         )
                 )
 
             if let deco = decoration {
-                Text(deco).font(.system(size: 10))
+                StickerText(text: deco, fontSize: 9, outlineWidth: 1)
             } else if isCompleted {
-                Text(habit.emoji).font(.system(size: 8)).opacity(0.6)
+                Image(systemName: "checkmark")
+                    .font(.system(size: 7, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.8))
             }
         }
-        // Today only: tap to toggle, long-press to decorate
+        .opacity(isFuture ? 0.25 : 1)
         .onTapGesture {
             guard isToday else { return }
             withAnimation(.spring(response: 0.25)) {
@@ -314,53 +325,34 @@ struct HabitProgressCard: View {
             guard isToday && isCompleted else { return }
             decoratingDate = IdentifiableDate(date: day)
         }
-        // Past days: show lock hint
-        .overlay(alignment: .center) {
-            if !isToday && !isFuture && isCompleted {
-                EmptyView()
-            }
-        }
-        .opacity(isFuture ? 0.3 : 1.0)
     }
 
     // MARK: - Completion bar
 
     private var completionBar: some View {
         let rate = completionRate
-        return VStack(spacing: 4) {
-            HStack {
-                Text("\(Int(rate * 100))% completion (last 35 days)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Spacer()
-            }
-            ProgressView(value: rate)
-                .tint(rateColor(rate))
+        return HStack(spacing: DSSpacing.sm) {
+            DSProgressBar(value: rate, color: habitRateColor(rate), height: 5)
+            Text("\(Int(rate * 100))%")
+                .font(DSFont.bodyBold(12))
+                .foregroundStyle(habitRateColor(rate))
+                .frame(width: 36, alignment: .trailing)
         }
     }
 
     // MARK: - Helpers
 
-    private func cellColor(completed: Bool, future: Bool, index: Int) -> Color {
-        if future   { return Color.secondary.opacity(0.08) }
-        guard completed else { return Color.secondary.opacity(0.15) }
-        if theme.current == .pride {
-            return theme.prideColor(at: index).opacity(0.75)
-        }
+    private func cellFill(completed: Bool, future: Bool, index: Int) -> Color {
+        if future { return Color.dsBorder.opacity(0.4) }
+        guard completed else { return Color.dsBorder }
         return habit.accentColor
     }
 
-    private var streakColor: Color {
-        theme.current == .pride
-            ? theme.prideColor(at: habit.currentStreak)
-            : habit.accentColor
-    }
-
-    private func rateColor(_ rate: Double) -> Color {
+    private func habitRateColor(_ rate: Double) -> Color {
         switch rate {
-        case 0.7...: return .green
-        case 0.4...: return .orange
-        default:     return .red
+        case 0.7...: return .dsMint
+        case 0.4...: return .dsGold
+        default:     return .dsCoral
         }
     }
 
