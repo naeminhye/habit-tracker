@@ -2,7 +2,7 @@
 //  MilestoneBannerView.swift
 //  HabitTracker
 //
-//  Created by JaceyNguyen on 20/04/2026.
+//  Created by BangChitty on 20/04/2026.
 //
 
 import SwiftUI
@@ -69,8 +69,12 @@ struct MilestoneBannerView: View {
                 offset = 0
                 opacity = 1
             }
-            // Auto-dismiss after 4 seconds
-            DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
+            // Auto-dismiss after 3 seconds
+//            DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
+//                dismiss()
+//            }
+            // Change 4 seconds to 3 seconds per spec
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {   // ← was 4
                 dismiss()
             }
         }

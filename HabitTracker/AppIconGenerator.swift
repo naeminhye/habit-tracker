@@ -18,8 +18,8 @@ struct AppIconView: View {
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color(hex: "7F77DD"),
-                            Color(hex: "534AB7")
+                            Color("7F77DD"),
+                            Color("534AB7")
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing

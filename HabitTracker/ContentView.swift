@@ -43,6 +43,7 @@ struct ContentView: View {
     @State private var showingDeleteConfirm = false
     @State private var habitToUndone: Habit? = nil
     @State private var showingUndoneConfirm = false
+    @State private var completionToasts: [CompletionToast] = []
     
     var dueHabits: [Habit] {
         habits.filter { habit in
@@ -50,14 +51,14 @@ struct ContentView: View {
             return matchesSearch(habit) && matchesFilter(habit)
         }
     }
-
+    
     var completedHabits: [Habit] {
         habits.filter { habit in
             guard habit.isCompletedToday else { return false }
             return matchesSearch(habit) && matchesFilter(habit)
         }
     }
-
+    
     var upcomingHabits: [Habit] {
         habits.filter { habit in
             guard !habit.isDueToday else { return false }
@@ -101,7 +102,7 @@ struct ContentView: View {
             ZStack(alignment: .top) {
                 // Main content
                 ZStack(alignment: .bottomTrailing) {
-                    Color.dsSurface.ignoresSafeArea()
+                    Color.dsPageBackground.ignoresSafeArea()
                     
                     if habits.isEmpty {
                         emptyState
@@ -192,6 +193,7 @@ struct ContentView: View {
             } message: {
                 Text("Did you accidentally mark this habit as done?")
             }
+            .completionToasts($completionToasts)
             .sheet(isPresented: $showingAddHabit) { AddHabitView() }
             .sheet(item: $editingHabit) { habit in
                 AddHabitView(editingHabit: habit)
@@ -200,143 +202,206 @@ struct ContentView: View {
     }
     
     // MARK: - Toolbar
-    
+
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .navigationBarLeading) {
             VStack(alignment: .leading, spacing: 1) {
                 Text(greeting)
-                    .font(DSFont.caption())
-                    .foregroundStyle(Color.dsLabel)
+                    .font(.system(size: 11))
+                    .foregroundStyle(Color.htFgSecondary)
                 Text("Today")
-                    .font(DSFont.title(20))
-                    .foregroundStyle(Color.dsPrimaryText)    // ← was dsIndigo
+                    .font(.system(size: 28, weight: .medium))
+                    .foregroundStyle(Color.htFg)
             }
+            .padding(.top, 4)
         }
         ToolbarItem(placement: .navigationBarTrailing) {
-            Text(Date().formatted(.dateTime.weekday(.wide).month().day()))
-                .font(DSFont.caption())
-                .foregroundStyle(Color.dsLabel)
+            HStack(spacing: 8) {
+                // Streak badge
+                if currentStreak > 0 {
+                    HStack(spacing: 4) {
+                        Text("🔥")
+                            .font(.system(size: 12))
+                        Text("\(currentStreak)")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(Color.htFireFg)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.htFireBg, in: Capsule())
+                }
+                // User avatar
+                ZStack {
+                    Circle()
+                        .fill(Color.htTintSoft)
+                        .frame(width: 28, height: 28)
+                    Text(userInitials)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(Color.htTint)
+                }
+            }
         }
     }
     
-    // MARK: - Habit list
+    private var currentStreak: Int {
+        habits.map(\.currentStreak).max() ?? 0
+    }
     
+    private var userInitials: String {
+        let name = UserDefaults.standard.string(forKey: "userName") ?? ""
+        if name.isEmpty { return "Me" }
+        let parts = name.split(separator: " ")
+        if parts.count >= 2 {
+            return "\(parts[0].prefix(1))\(parts[1].prefix(1))".uppercased()
+        }
+        return String(name.prefix(2)).uppercased()
+    }
+    
+    // MARK: - Habit list
+
     private var habitList: some View {
         List {
-            // Streak + progress
+            // ── Streak strip (floating, no card) ──
             Section {
-                VStack(spacing: DSSpacing.sm) {
+                VStack(alignment: .leading, spacing: 10) {
+                    // Date sublabel
+                    Text(dateSubLabel)
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.htFgSecondary)
+
+                    // 7-day strip
                     StreakStripView(habits: habits)
-                    progressBar
+
+                    // Progress bar
+                    VStack(spacing: 4) {
+                        HStack {
+                            Text("\(completedCount) of \(totalCount) done")
+                                .font(.system(size: 13))
+                                .foregroundStyle(Color.htFgSecondary)
+                            Spacer()
+                            Text("\(Int(progress * 100))%")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(Color.htTint)
+                        }
+                        DSProgressBar(
+                            value: progress,
+                            color: Color.htTint,
+                            height: 5
+                        )
+                    }
+                }
+                .padding(.top, 4)
+                .listRowInsets(EdgeInsets(
+                    top: 8, leading: DSSpacing.lg,
+                    bottom: 8, trailing: DSSpacing.lg
+                ))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+            }
+
+            // ── All-done celebration ──
+            if totalCount > 0 && completedCount == totalCount {
+                Section {
+                    allDoneCard
+                        .listRowInsets(EdgeInsets(
+                            top: 0, leading: DSSpacing.lg,
+                            bottom: 0, trailing: DSSpacing.lg
+                        ))
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                }
+            }
+
+            // ── Search + filter ──
+            Section {
+                // Filter chips
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        HTFilterChip(
+                            label: "All",
+                            isActive: activeFilter == .all
+                        ) { activeFilter = .all }
+
+                        HTFilterChip(
+                            label: "Pending",
+                            isActive: activeFilter == .pending
+                        ) { activeFilter = .pending }
+
+                        HTFilterChip(
+                            label: "Done",
+                            isActive: activeFilter == .completed
+                        ) { activeFilter = .completed }
+
+                        ForEach(allTags) { tag in
+                            HTFilterChip(
+                                label: tag.label,
+                                isActive: activeFilter == .tag(tag),
+                                dotColor: tag.color
+                            ) { activeFilter = .tag(tag) }
+                        }
+                    }
+                    .padding(.horizontal, DSSpacing.lg)
+                    .padding(.vertical, 4)
                 }
                 .listRowInsets(EdgeInsets())
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
             }
 
-            // Filter bar
-            Section {
-                filterBar
-                    .listRowInsets(EdgeInsets())
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-            }
-
-            // Pending habits
+            // ── Due today ──
             if !dueHabits.isEmpty {
                 Section {
                     ForEach(dueHabits) { habit in
-                        HabitRowView(
-                            habit: habit,
-                            onEdit: { editingHabit = habit },
-                            onMilestoneUnlocked: { unlocks in
-                                pendingUnlocks.append(contentsOf: unlocks)
-                            }
-                        )
-                        .listRowInsets(EdgeInsets(
-                            top: 4, leading: 16,
-                            bottom: 4, trailing: 16
-                        ))
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                        .swipeActions(edge: .trailing,
-                                      allowsFullSwipe: false) {
-                            deleteButton(habit)
-                            editButton(habit)
-                        }
-                        .swipeActions(edge: .leading,
-                                      allowsFullSwipe: true) {
-                            editButton(habit)
-                        }
+                        habitRow(habit)
                     }
+                } header: {
+                    HTOverline(text: "Due today")
+                        .padding(.horizontal, DSSpacing.lg)
+                        .padding(.top, DSSpacing.sm)
                 }
             }
 
-            // Completed today
+            // ── Completed today ──
             if !completedHabits.isEmpty {
                 Section {
                     ForEach(completedHabits) { habit in
-                        HabitRowView(
-                            habit: habit,
-                            onEdit: { editingHabit = habit },
-                            onMilestoneUnlocked: { unlocks in
-                                pendingUnlocks.append(contentsOf: unlocks)
-                            }
-                        )
-                        .listRowInsets(EdgeInsets(
-                            top: 4, leading: 16,
-                            bottom: 4, trailing: 16
-                        ))
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                        .swipeActions(edge: .trailing,
-                                      allowsFullSwipe: false) {
-                            deleteButton(habit)
-                            editButton(habit)
-                        }
-                        .swipeActions(edge: .leading,
-                                      allowsFullSwipe: false) {
-                            undoButton(habit)
-                        }
+                        completedRow(habit)
                     }
                 } header: {
-                    Text("Completed")
-                        .font(DSFont.capsLabel())
-                        .foregroundStyle(Color.dsLabel)
-                        .kerning(0.8)
+                    HTOverline(text: "Completed")
+                        .padding(.horizontal, DSSpacing.lg)
+                        .padding(.top, DSSpacing.sm)
                 }
             }
 
-            // Upcoming
+            // ── Upcoming ──
             if !upcomingHabits.isEmpty {
                 Section {
                     ForEach(upcomingHabits) { habit in
                         upcomingRow(habit)
                             .listRowInsets(EdgeInsets(
-                                top: 4, leading: 16,
-                                bottom: 4, trailing: 16
+                                top: 4, leading: DSSpacing.lg,
+                                bottom: 4, trailing: DSSpacing.lg
                             ))
                             .listRowBackground(Color.clear)
                             .listRowSeparator(.hidden)
-                            .swipeActions(edge: .trailing,
-                                          allowsFullSwipe: false) {
+                            .opacity(0.6)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                 deleteButton(habit)
                                 editButton(habit)
                             }
                     }
                 } header: {
-                    Text("Upcoming")
-                        .font(DSFont.capsLabel())
-                        .foregroundStyle(Color.dsLabel)
-                        .kerning(0.8)
+                    HTOverline(text: "Upcoming")
+                        .padding(.horizontal, DSSpacing.lg)
+                        .padding(.top, DSSpacing.sm)
                 }
             }
 
-            // Empty state
-            if dueHabits.isEmpty &&
-               completedHabits.isEmpty &&
-               upcomingHabits.isEmpty {
+            // ── Empty state ──
+            if dueHabits.isEmpty && completedHabits.isEmpty
+                && upcomingHabits.isEmpty {
                 Section {
                     emptyFilterState
                         .listRowBackground(Color.clear)
@@ -353,11 +418,47 @@ struct ContentView: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
-        .background(Color.dsSurface)
+        .background(Color.htBg)
+    }
+    
+    // MARK: - All-done card
+
+    private var allDoneCard: some View {
+        HStack(spacing: 12) {
+            Text("🎉").font(.system(size: 24))
+            VStack(alignment: .leading, spacing: 2) {
+                Text("All done for today!")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(Color.htTint)
+                Text("100% · Come back tomorrow")
+                    .font(.system(size: 11))
+                    .foregroundStyle(Color.htTintDeep)
+            }
+            Spacer()
+            Text("100%")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(Color.htTint)
+        }
+        .padding(DSSpacing.s3)
+        .background(Color.htTintSofter,
+                    in: RoundedRectangle(cornerRadius: DSRadius.card))
+        .overlay(
+            RoundedRectangle(cornerRadius: DSRadius.card)
+                .strokeBorder(Color.htTintSoft, lineWidth: 0.5)
+        )
     }
 
-    // MARK: - Swipe buttons
+    // MARK: - Date label
 
+    private var dateSubLabel: String {
+        let f = DateFormatter()
+        f.dateFormat = "EEEE · MMMM d"
+        return f.string(from: Date())
+    }
+
+    
+    // MARK: - Swipe buttons
+    
     private func deleteButton(_ habit: Habit) -> some View {
         Button(role: .destructive) {
             habitToDelete = habit
@@ -366,7 +467,7 @@ struct ContentView: View {
             Label("Delete", systemImage: "trash")
         }
     }
-
+    
     private func editButton(_ habit: Habit) -> some View {
         Button {
             editingHabit = habit
@@ -375,7 +476,7 @@ struct ContentView: View {
         }
         .tint(Color.dsIndigo)
     }
-
+    
     private func undoButton(_ habit: Habit) -> some View {
         Button {
             habitToUndone = habit
@@ -390,112 +491,98 @@ struct ContentView: View {
         HabitRowView(
             habit: habit,
             onEdit: { editingHabit = habit },
-            onMilestoneUnlocked: { unlocks in
-                pendingUnlocks.append(contentsOf: unlocks)
-            }
+            onMilestoneUnlocked: { pendingUnlocks.append(contentsOf: $0) },
+            onCompleted: { completionToasts.append($0) }
         )
-        .padding(.horizontal, DSSpacing.lg)
+        .listRowInsets(EdgeInsets(
+            top: 4, leading: DSSpacing.lg,
+            bottom: 4, trailing: DSSpacing.lg
+        ))
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-            Button(role: .destructive) {
-                habitToDelete = habit
-                showingDeleteConfirm = true
-            } label: {
-                Label("Delete", systemImage: "trash")
-            }
-
-            Button {
-                editingHabit = habit
-            } label: {
-                Label("Edit", systemImage: "pencil")
-            }
-            .tint(Color.dsIndigo)
+            deleteButton(habit)
+            editButton(habit)
         }
         .swipeActions(edge: .leading, allowsFullSwipe: false) {
-            // Swipe right to undo
-            Button {
-                habitToUndone = habit
-                showingUndoneConfirm = true
-            } label: {
-                Label("Undo", systemImage: "arrow.uturn.backward")
-            }
-            .tint(Color.dsGold)
+            undoButton(habit)
         }
     }
     
-    // MARK: - Due today row
+    // MARK: - Habit row builder
+
     private func habitRow(_ habit: Habit) -> some View {
         HabitRowView(
             habit: habit,
             onEdit: { editingHabit = habit },
-            onMilestoneUnlocked: { unlocks in
-                pendingUnlocks.append(contentsOf: unlocks)
-            }
+            onMilestoneUnlocked: { pendingUnlocks.append(contentsOf: $0) },
+            onCompleted: { completionToasts.append($0) }
         )
-        .padding(.horizontal, DSSpacing.lg)
+        .listRowInsets(EdgeInsets(
+            top: 4, leading: DSSpacing.lg,
+            bottom: 4, trailing: DSSpacing.lg
+        ))
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-            Button(role: .destructive) {
-                habitToDelete = habit
-                showingDeleteConfirm = true
-            } label: {
-                Label("Delete", systemImage: "trash")
-            }
-            
-            Button {
-                editingHabit = habit
-            } label: {
-                Label("Edit", systemImage: "pencil")
-            }
-            .tint(Color.dsIndigo)
+            deleteButton(habit)
+            editButton(habit)
         }
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
-            Button {
-                editingHabit = habit
-            } label: {
-                Label("Edit", systemImage: "pencil")
-            }
-            .tint(Color.dsIndigo)
+            editButton(habit)
         }
     }
+
     
     // MARK: - Upcoming row
-    
-    private func upcomingRow(_ habit: Habit) -> some View {
-        HStack(spacing: DSSpacing.md) {
-            DSHabitAvatar(
-                emoji: habit.emoji,
-                color: habit.accentColor,
-                size: 40,
-                completed: false
-            )
-            .opacity(0.5)
 
-            VStack(alignment: .leading, spacing: 3) {
+private func upcomingRow(_ habit: Habit) -> some View {
+        HStack(spacing: 12) {
+            // Accent bar
+            RoundedRectangle(cornerRadius: 2)
+                .fill(habit.accentColor.opacity(0.4))
+                .frame(width: 3, height: 36)
+
+            // Avatar
+            ZStack {
+                Circle()
+                    .fill(habit.accentColor.opacity(0.1))
+                    .frame(width: 36, height: 36)
+                Text(habit.emoji)
+                    .font(.system(size: 18))
+            }
+            .opacity(0.6)
+
+            // Info
+            VStack(alignment: .leading, spacing: 2) {
                 Text(habit.name)
-                    .font(DSFont.bodyBold())
-                    .foregroundStyle(Color.dsLabel)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(Color.htFgSecondary)
                     .lineLimit(1)
                 if let next = habit.nextDueDate {
-                    HStack(spacing: 4) {
-                        Image(systemName: "calendar")
-                            .font(.system(size: 10))
-                        Text("Next: \(next.formatted(date: .abbreviated, time: .omitted))")
-                            .font(DSFont.caption())
-                    }
-                    .foregroundStyle(Color.dsLabel)
+                    Text("Next: \(next.formatted(date: .abbreviated, time: .omitted))")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.htFgTertiary)
                 }
             }
 
             Spacer()
-            DSPill(text: habit.frequencyLabel, color: Color.dsLabel)
+
+            Text(habit.frequencyLabel)
+                .font(.system(size: 10))
+                .foregroundStyle(Color.htFgTertiary)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+                .background(Color.htSurfaceAlt, in: Capsule())
         }
-        .padding(DSSpacing.md)
-        .background(Color.dsBackground,
-                    in: RoundedRectangle(cornerRadius: DSRadius.md))
+        .padding(.horizontal, DSSpacing.s3)
+        .padding(.vertical, DSSpacing.s2)
+        .background(Color.htSurface,
+                    in: RoundedRectangle(cornerRadius: DSRadius.card))
         .overlay(
-            RoundedRectangle(cornerRadius: DSRadius.md)
-                .strokeBorder(Color.dsBorder, lineWidth: 1)
+            RoundedRectangle(cornerRadius: DSRadius.card)
+                .strokeBorder(Color.htBorderC, lineWidth: 0.5)
         )
-        .opacity(0.6)
     }
     
     private var progressBar: some View {
@@ -512,8 +599,9 @@ struct ContentView: View {
             DSProgressBar(
                 value: progress,
                 color: ThemeManager.shared.accentColor,
-                height: 6
+                height: 5
             )
+            .animation(.easeOut(duration: 0.2), value: progress)
         }
         .padding(DSSpacing.md)
         .background(Color.dsBackground,
@@ -544,30 +632,31 @@ struct ContentView: View {
     private func filterChip(_ filter: HabitFilter) -> some View {
         let isActive = activeFilter == filter
         return Button {
-            withAnimation(.spring(response: 0.3)) {
+            withAnimation(.easeOut(duration: 0.15)) {   // ← spec: ease-out not spring
                 activeFilter = filter
             }
         } label: {
             HStack(spacing: 4) {
                 if case .tag(let t) = filter {
-                    Circle().fill(t.color).frame(width: 6, height: 6)
+                    Circle().fill(t.color).frame(width: 5, height: 5)
                 }
                 Text(filter.label)
-                    .font(DSFont.bodyBold(13))
+                    .font(.system(size: 10, weight: .medium))
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .frame(height: 22)                          // ← spec: 22pt height
             .background(
-                isActive ? Color.dsIndigo : Color.dsBackground,
+                isActive ? Color.dsPrimaryText : Color.htPendingBg,
                 in: Capsule()
             )
             .overlay(
                 Capsule().strokeBorder(
                     isActive ? Color.clear : Color.dsBorder,
-                    lineWidth: 1
+                    lineWidth: 0.5
                 )
             )
-            .foregroundStyle(isActive ? .white : Color.dsPrimaryText)
+            .foregroundStyle(isActive ? .white : Color.dsLabel)
         }
         .buttonStyle(.plain)
     }
@@ -775,6 +864,36 @@ struct HabitRow: View {
 
 // MARK: - RootView
 
+//struct RootView: View {
+//    @State private var theme = ThemeManager.shared
+//
+//    var body: some View {
+//        TabView {
+//            ContentView()
+//                .tabItem {
+//                    Label("Today", systemImage: "checkmark.circle.fill")
+//                }
+//            FocusTabView()
+//                .tabItem {
+//                    Label("Focus", systemImage: "timer")
+//                }
+//            HabitProgressView()
+//                .tabItem {
+//                    Label("Progress", systemImage: "chart.bar.fill")
+//                }
+//            AchievementsView()
+//                .tabItem {
+//                    Label("Achievements", systemImage: "medal.fill")
+//                }
+//            SettingsView()
+//                .tabItem {
+//                    Label("Settings", systemImage: "gearshape.fill")
+//                }
+//        }
+//        .tint(theme.accentColor)
+//    }
+//}
+
 struct RootView: View {
     @State private var theme = ThemeManager.shared
     
@@ -784,17 +903,17 @@ struct RootView: View {
                 .tabItem {
                     Label("Today", systemImage: "checkmark.circle.fill")
                 }
-            FocusTabView()
-                .tabItem {
-                    Label("Focus", systemImage: "timer")
-                }
             HabitProgressView()
                 .tabItem {
                     Label("Progress", systemImage: "chart.bar.fill")
                 }
+            FocusTabView()
+                .tabItem {
+                    Label("Habits", systemImage: "list.bullet")
+                }
             AchievementsView()
                 .tabItem {
-                    Label("Achievements", systemImage: "medal.fill")
+                    Label("Awards", systemImage: "medal.fill")
                 }
             SettingsView()
                 .tabItem {

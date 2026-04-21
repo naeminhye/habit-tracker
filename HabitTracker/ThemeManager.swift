@@ -42,20 +42,22 @@ struct TintOption: Identifiable, Equatable {
 
 extension TintOption {
     static let all: [TintOption] = [
-        TintOption(id: "coral",    name: "Coral",    hex: "FF6B4A"),
-        TintOption(id: "indigo",   name: "Indigo",   hex: "5856D6"),
-        TintOption(id: "teal",     name: "Teal",     hex: "00C7BE"),
-        TintOption(id: "blue",     name: "Blue",     hex: "007AFF"),
-        TintOption(id: "mint",     name: "Mint",     hex: "00C896"),
-        TintOption(id: "purple",   name: "Purple",   hex: "AF52DE"),
-        TintOption(id: "pink",     name: "Pink",     hex: "FF2D55"),
-        TintOption(id: "orange",   name: "Orange",   hex: "FF9500"),
-        TintOption(id: "yellow",   name: "Yellow",   hex: "FFCC00"),
-        TintOption(id: "green",    name: "Green",    hex: "34C759"),
-        TintOption(id: "brown",    name: "Brown",    hex: "A2845E"),
-        TintOption(id: "graphite", name: "Graphite", hex: "636366"),
+        TintOption(id: "teal",     name: "Teal",    hex: "4A9E8A"),  // oklch 0.62 0.11 165
+        TintOption(id: "coral",    name: "Coral",   hex: "CC6B5A"),  // oklch 0.62 0.11 25
+        TintOption(id: "orange",   name: "Orange",  hex: "B87840"),  // oklch 0.62 0.11 55
+        TintOption(id: "yellow",   name: "Yellow",  hex: "8C8A30"),  // oklch 0.62 0.11 90
+        TintOption(id: "mint",     name: "Mint",    hex: "3E9E70"),  // oklch 0.62 0.11 140
+        TintOption(id: "green",    name: "Green",   hex: "3A9E7A"),  // oklch 0.62 0.11 185
+        TintOption(id: "blue",     name: "Blue",    hex: "4A7ECC"),  // oklch 0.62 0.11 230
+        TintOption(id: "indigo",   name: "Indigo",  hex: "6A5ECC"),  // oklch 0.62 0.11 265
+        TintOption(id: "purple",   name: "Purple",  hex: "8A4ECC"),  // oklch 0.62 0.11 295
+        TintOption(id: "pink",     name: "Pink",    hex: "CC4A7A"),  // oklch 0.62 0.11 340
+        TintOption(id: "brown",    name: "Brown",   hex: "7A6050"),  // oklch 0.55 0.06 60
+        TintOption(id: "graphite", name: "Graphite",hex: "7A7A72"),  // oklch 0.55 0.01 90
     ]
-    static let `default` = TintOption.all[0]
+
+    static let `default` = TintOption.all.first { $0.id == "teal" } ?? TintOption.all[0]
+
 }
 
 // MARK: - ThemeManager
@@ -82,7 +84,7 @@ final class ThemeManager {
     var accentColor: Color { tint.color }
 
     private init() {
-        let savedTint = UserDefaults.standard.string(forKey: "appTintID") ?? "coral"
+        let savedTint = UserDefaults.standard.string(forKey: "appTintID") ?? "teal"  // ← teal
         tint = TintOption.all.first { $0.id == savedTint } ?? .default
 
         let savedApp = UserDefaults.standard.string(forKey: "appAppearance") ?? "System"

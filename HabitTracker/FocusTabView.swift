@@ -2,7 +2,7 @@
 //  FocusTabView.swift
 //  HabitTracker
 //
-//  Created by JaceyNguyen on 19/04/2026.
+//  Created by BangChitty on 19/04/2026.
 //
 
 import SwiftUI
@@ -34,7 +34,7 @@ struct FocusTabView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.dsSurface.ignoresSafeArea()
+                Color.dsPageBackground.ignoresSafeArea()
                 VStack(spacing: 0) {
                     navBar
                     ScrollView(showsIndicators: false) {
@@ -72,11 +72,11 @@ struct FocusTabView: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text("FOCUS")
-                    .font(DSFont.capsLabel())
+                    .font(DSFont.overline())
                     .foregroundStyle(Color.dsLabel)
                     .kerning(1)
                 Text("\(todayFocusMinutes) min today")
-                    .font(DSFont.title(20))
+                    .font(DSFont.displayM())
                     .foregroundStyle(Color.dsIndigo)
             }
             Spacer()
@@ -106,7 +106,7 @@ struct FocusTabView: View {
             DSStatBadge(
                 value: "\(todayFocusMinutes)m",
                 label: "TODAY",
-                color: .dsCoral,
+                color: .accentColor,
                 icon: "timer"
             )
             dsVerticalDivider

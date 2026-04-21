@@ -9,17 +9,23 @@ import SwiftUI
 
 struct SettingsView: View {
     @State private var theme = ThemeManager.shared
-
+    @State private var remindersEnabled = UserDefaults.standard.bool(forKey: "remindersEnabled")
+    @State private var milestoneBannersEnabled = UserDefaults.standard.bool(forKey: "milestoneBanners") == false ? true : UserDefaults.standard.bool(forKey: "milestoneBanners")
+    @State private var dailySummaryEnabled = UserDefaults.standard.bool(forKey: "dailySummary")
+    @State private var summaryTime = Date()
+    
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.dsSurface.ignoresSafeArea()
+                Color.dsPageBackground.ignoresSafeArea()
                 VStack(spacing: 0) {
                     navBar
                     ScrollView(showsIndicators: false) {
                         VStack(spacing: DSSpacing.lg) {
                             tintSection
                             appearanceSection
+                            notificationsSection
+                            widgetsSection
                             aboutSection
                         }
                         .padding(DSSpacing.lg)
@@ -30,18 +36,18 @@ struct SettingsView: View {
             .navigationBarHidden(true)
         }
     }
-
+    
     // MARK: - Nav bar
-
+    
     private var navBar: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text("SETTINGS")
-                    .font(DSFont.capsLabel())
+                    .font(DSFont.overline())
                     .foregroundStyle(Color.dsLabel)
                     .kerning(1)
                 Text("Preferences")
-                    .font(DSFont.title(20))
+                    .font(DSFont.displayM())
                     .foregroundStyle(Color.dsPrimaryText)
             }
             Spacer()
@@ -50,51 +56,64 @@ struct SettingsView: View {
         .padding(.top, DSSpacing.md)
         .padding(.bottom, DSSpacing.sm)
     }
-
+    
     // MARK: - Tint section
-
+    
     private var tintSection: some View {
         VStack(alignment: .leading, spacing: DSSpacing.md) {
             DSSectionHeader(title: "Tint color")
 
-            // Color grid
-            LazyVGrid(
-                columns: Array(repeating: GridItem(.flexible()), count: 6),
-                spacing: DSSpacing.md
-            ) {
-                ForEach(TintOption.all) { option in
-                    TintColorCell(
-                        option: option,
-                        isSelected: theme.tint.id == option.id
-                    ) {
-                        withAnimation(.spring(response: 0.3)) {
-                            theme.tint = option
+            // Single scrollable row of dots per spec
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: DSSpacing.md) {
+                    ForEach(TintOption.all) { option in
+                        Button {
+                            withAnimation(.easeOut(duration: 0.15)) {
+                                theme.tint = option
+                            }
+                        } label: {
+                            ZStack {
+                                Circle()
+                                    .fill(option.color)
+                                    .frame(width: 28, height: 28)
+                                if theme.tint.id == option.id {
+                                    Circle()
+                                        .strokeBorder(Color.dsPrimaryText,
+                                                      lineWidth: 2)
+                                        .frame(width: 28, height: 28)
+                                        .padding(2)
+                                }
+                            }
+                            .frame(width: 36, height: 36)
                         }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(option.name)
                     }
                 }
+                .padding(.horizontal, DSSpacing.lg)
+                .padding(.vertical, DSSpacing.sm)
             }
-            .padding(DSSpacing.md)
-            .background(Color.dsBackground,
+            .background(Color.dsCardBackground,
                         in: RoundedRectangle(cornerRadius: DSRadius.md))
             .overlay(
                 RoundedRectangle(cornerRadius: DSRadius.md)
-                    .strokeBorder(Color.dsBorder, lineWidth: 1)
+                    .strokeBorder(Color.dsBorder, lineWidth: 0.5)
             )
 
             // Live preview
             tintPreview
         }
     }
-
+    
     // MARK: - Live preview
-
+    
     private var tintPreview: some View {
         VStack(alignment: .leading, spacing: DSSpacing.sm) {
             Text("Preview")
-                .font(DSFont.capsLabel(10))
+                .font(DSFont.overline())
                 .foregroundStyle(Color.dsLabel)
                 .kerning(0.5)
-
+            
             HStack(spacing: DSSpacing.md) {
                 // Progress ring preview
                 ZStack {
@@ -113,7 +132,7 @@ struct SettingsView: View {
                         .font(DSFont.caption(9))
                         .foregroundStyle(theme.accentColor)
                 }
-
+                
                 VStack(alignment: .leading, spacing: 6) {
                     // Progress bar preview
                     GeometryReader { geo in
@@ -127,7 +146,7 @@ struct SettingsView: View {
                         }
                     }
                     .frame(height: 6)
-
+                    
                     // Button preview
                     HStack(spacing: DSSpacing.sm) {
                         Text("Today")
@@ -136,7 +155,7 @@ struct SettingsView: View {
                             .padding(.vertical, 6)
                             .background(theme.accentColor, in: Capsule())
                             .foregroundStyle(.white)
-
+                        
                         Text("Pending")
                             .font(DSFont.bodyBold(12))
                             .padding(.horizontal, 14)
@@ -158,58 +177,138 @@ struct SettingsView: View {
             )
         }
     }
-
+    
     // MARK: - Appearance section
-
+    
     private var appearanceSection: some View {
         VStack(alignment: .leading, spacing: DSSpacing.md) {
             DSSectionHeader(title: "Appearance")
 
-            VStack(spacing: 2) {
+            // Segmented control per spec
+            HStack(spacing: 0) {
                 ForEach(AppAppearance.allCases, id: \.self) { option in
-                    let isSelected = theme.appearance == option
+                    let isActive = theme.appearance == option
                     Button {
-                        withAnimation { theme.appearance = option }
-                    } label: {
-                        HStack(spacing: DSSpacing.md) {
-                            Image(systemName: option.icon)
-                                .font(.system(size: 15))
-                                .foregroundStyle(
-                                    isSelected ? theme.accentColor : Color.dsLabel
-                                )
-                                .frame(width: 28)
-                            Text(option.rawValue)
-                                .font(DSFont.body())
-                                .foregroundStyle(Color.dsPrimaryText)
-                            Spacer()
-                            if isSelected {
-                                Image(systemName: "checkmark")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundStyle(theme.accentColor)
-                            }
+                        withAnimation(.easeOut(duration: 0.15)) {
+                            theme.appearance = option
                         }
-                        .padding(DSSpacing.md)
-                        .background(
-                            isSelected
-                                ? theme.accentColor.opacity(0.06)
-                                : Color.dsBackground,
-                            in: RoundedRectangle(cornerRadius: DSRadius.sm)
-                        )
+                    } label: {
+                        Text(option.rawValue)
+                            .font(.system(size: 13, weight: .medium))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 28)
+                            .background(
+                                isActive ? Color.dsPrimaryText : Color.clear,
+                                in: RoundedRectangle(cornerRadius: 8)
+                            )
+                            .foregroundStyle(isActive ? .white : Color.dsLabel)
                     }
                     .buttonStyle(.plain)
+                }
+            }
+            .padding(3)
+            .background(Color.dsCardBackground,
+                        in: RoundedRectangle(cornerRadius: 11))
+            .overlay(
+                RoundedRectangle(cornerRadius: 11)
+                    .strokeBorder(Color.dsBorder, lineWidth: 0.5)
+            )
+        }
+    }
+    
+    // MARK: - Notification section
+    
+    private var notificationsSection: some View {
+        VStack(alignment: .leading, spacing: DSSpacing.md) {
+            DSSectionHeader(title: "Notifications")
+
+            VStack(spacing: 0) {
+                settingsRow {
+                    Toggle("Habit reminders", isOn: $remindersEnabled)
+                        .font(DSFont.body())
+                        .onChange(of: remindersEnabled) { _, val in
+                            UserDefaults.standard.set(val, forKey: "remindersEnabled")
+                        }
+                }
+                DSDivider().padding(.horizontal, DSSpacing.md)
+                settingsRow {
+                    Toggle("Milestone banners", isOn: $milestoneBannersEnabled)
+                        .font(DSFont.body())
+                        .onChange(of: milestoneBannersEnabled) { _, val in
+                            UserDefaults.standard.set(val, forKey: "milestoneBanners")
+                        }
+                }
+                DSDivider().padding(.horizontal, DSSpacing.md)
+                settingsRow {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Toggle("Daily summary", isOn: $dailySummaryEnabled)
+                            .font(DSFont.body())
+                            .onChange(of: dailySummaryEnabled) { _, val in
+                                UserDefaults.standard.set(val, forKey: "dailySummary")
+                            }
+                        if dailySummaryEnabled {
+                            DatePicker("Time", selection: $summaryTime,
+                                       displayedComponents: .hourAndMinute)
+                                .font(DSFont.caption())
+                                .foregroundStyle(Color.dsLabel)
+                        }
+                    }
                 }
             }
             .background(Color.dsBackground,
                         in: RoundedRectangle(cornerRadius: DSRadius.md))
             .overlay(
                 RoundedRectangle(cornerRadius: DSRadius.md)
-                    .strokeBorder(Color.dsBorder, lineWidth: 1)
+                    .strokeBorder(Color.dsBorder, lineWidth: 0.5)
             )
         }
     }
 
-    // MARK: - About section
+    // MARK: - Widgets section
+    
+    private var widgetsSection: some View {
+        VStack(alignment: .leading, spacing: DSSpacing.md) {
+            DSSectionHeader(title: "Widgets")
 
+            VStack(spacing: 0) {
+                settingsRow {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Configure widgets from the iOS home screen")
+                            .font(DSFont.body())
+                            .foregroundStyle(Color.dsPrimaryText)
+                        Text("Long-press the home screen → tap + → search Habit Tracker")
+                            .font(DSFont.caption())
+                            .foregroundStyle(Color.dsLabel)
+                    }
+                }
+                DSDivider().padding(.horizontal, DSSpacing.md)
+                settingsRow {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Available widgets")
+                            .font(DSFont.body())
+                            .foregroundStyle(Color.dsPrimaryText)
+                        Text("Home screen: Small (ring), Medium (habit list)\nLock screen: Circular, Rectangular, Inline")
+                            .font(DSFont.caption())
+                            .foregroundStyle(Color.dsLabel)
+                    }
+                }
+            }
+            .background(Color.dsBackground,
+                        in: RoundedRectangle(cornerRadius: DSRadius.md))
+            .overlay(
+                RoundedRectangle(cornerRadius: DSRadius.md)
+                    .strokeBorder(Color.dsBorder, lineWidth: 0.5)
+            )
+        }
+    }
+
+    private func settingsRow<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        content()
+            .padding(DSSpacing.md)
+    }
+    
+    // MARK: - About section
+    
     private var aboutSection: some View {
         VStack(alignment: .leading, spacing: DSSpacing.md) {
             DSSectionHeader(title: "About")
@@ -226,7 +325,7 @@ struct SettingsView: View {
             )
         }
     }
-
+    
     private func aboutRow(label: String, value: String) -> some View {
         HStack {
             Text(label).font(DSFont.body()).foregroundStyle(Color.dsPrimaryText)
@@ -243,14 +342,14 @@ struct TintColorCell: View {
     let option: TintOption
     let isSelected: Bool
     let onTap: () -> Void
-
+    
     var body: some View {
         Button(action: onTap) {
             ZStack {
                 Circle()
                     .fill(option.color)
                     .frame(width: 36, height: 36)
-
+                
                 if isSelected {
                     Circle()
                         .strokeBorder(.white, lineWidth: 2.5)

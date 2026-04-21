@@ -13,11 +13,10 @@ struct TagManagerView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Query var allTags: [Tag]
-    @Binding var selectedTags: [Tag]
-
+    @Binding var selectedTagIDs: [UUID]
+    
     @State private var newLabel = ""
     @State private var newColorHex = "007AFF"
-    @State private var showingCreator = false
 
     var body: some View {
         NavigationStack {
@@ -43,13 +42,12 @@ struct TagManagerView: View {
                     .font(.subheadline)
             } else {
                 ForEach(allTags) { tag in
-                    let isSelected = selectedTags.contains { $0.id == tag.id }
+                    let isSelected = selectedTagIDs.contains(tag.id)
                     HStack(spacing: 12) {
                         Circle()
                             .fill(tag.color)
                             .frame(width: 12, height: 12)
-                        Text(tag.label)
-                            .font(.body)
+                        Text(tag.label).font(.body)
                         Spacer()
                         if isSelected {
                             Image(systemName: "checkmark")
@@ -60,14 +58,18 @@ struct TagManagerView: View {
                     .contentShape(Rectangle())
                     .onTapGesture {
                         if isSelected {
-                            selectedTags.removeAll { $0.id == tag.id }
+                            selectedTagIDs.removeAll { $0 == tag.id }  // ← changed
                         } else {
-                            selectedTags.append(tag)
+                            selectedTagIDs.append(tag.id)              // ← changed
                         }
                     }
                 }
                 .onDelete { indexSet in
-                    for i in indexSet { context.delete(allTags[i]) }
+                    for i in indexSet {
+                        let tag = allTags[i]
+                        selectedTagIDs.removeAll { $0 == tag.id }
+                        context.delete(tag)
+                    }
                 }
             }
         } header: {
@@ -94,14 +96,14 @@ struct TagManagerView: View {
             Text("New tag")
         }
     }
-    
+
     private func createTag() {
         let tag = Tag(
             label: newLabel.trimmingCharacters(in: .whitespaces),
             colorHex: newColorHex
         )
         context.insert(tag)
-        selectedTags.append(tag)
+        selectedTagIDs.append(tag.id)              // ← changed
         newLabel = ""
         newColorHex = "007AFF"
     }

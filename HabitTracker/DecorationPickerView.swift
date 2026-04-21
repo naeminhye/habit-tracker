@@ -15,227 +15,200 @@ struct DecorationPickerView: View {
 
     @State private var pendingDecoration: String? = nil
     @State private var showingStickerPicker = false
+    @State private var outlineEffectEnabled = true
 
-    // The decoration currently saved for this date
     private var savedDecoration: String? {
         let d = habit.decoration(for: date)
         return d?.isEmpty == false ? d : nil
     }
 
-    // What to show in preview — pending takes priority
     private var previewDecoration: String? {
         pendingDecoration ?? savedDecoration
     }
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                habitRowPreview
-                    .padding(.horizontal, DSSpacing.lg)
-                    .padding(.top, DSSpacing.lg)
-                    .padding(.bottom, DSSpacing.md)
+        VStack(spacing: 0) {
+            // Handle
+            RoundedRectangle(cornerRadius: 3)
+                .fill(Color(hex: "DDDDDA"))
+                .frame(width: 32, height: 3)
+                .padding(.top, 12)
+                .padding(.bottom, 8)
 
-                DSDivider()
-
-                browseButton
-                    .padding(.horizontal, DSSpacing.lg)
-                    .padding(.top, DSSpacing.md)
-                    .padding(.bottom, DSSpacing.sm)
-
-                quickEmojiGrid
-
-                Spacer(minLength: 0)
-            }
-            .navigationTitle("Decorate")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Skip") {
-                        onDismiss?()
-                        dismiss()
-                    }
-                    .foregroundStyle(Color.dsLabel)
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
-                        if let pending = pendingDecoration {
-                            habit.setDecoration(pending, for: date)
-                        }
-                        onDismiss?()
-                        dismiss()
-                    }
-                    .font(DSFont.bodyBold())
-                    .foregroundStyle(
-                        pendingDecoration != nil
-                            ? ThemeManager.shared.accentColor
-                            : Color.dsLabel
-                    )
-                    .disabled(pendingDecoration == nil && savedDecoration == nil)
-                }
-            }
-            .sheet(isPresented: $showingStickerPicker) {
-                StickerPickerSheet(
-                    selectedEmoji: Binding(
-                        get: { pendingDecoration ?? "" },
-                        set: { emoji in
-                            if !emoji.isEmpty {
-                                pendingDecoration = emoji
-                            }
-                        }
-                    ),
-                    selectedSticker: Binding(
-                        get: { nil },
-                        set: { img in
-                            guard let img,
-                                  let data = img.pngData() else { return }
-                            pendingDecoration = "sticker:" + data.base64EncodedString()
-                        }
-                    )
-                )
-            }
-        }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
-    }
-
-    // MARK: - Habit row preview (mirrors HabitRowView exactly)
-
-    private var habitRowPreview: some View {
-        HStack(spacing: DSSpacing.md) {
-            // Avatar — same as HabitRowView
-            ZStack(alignment: .bottomTrailing) {
-                DSHabitAvatar(
-                    emoji: habit.emoji,
-                    color: ThemeManager.shared.accentColor,
-                    size: 48,
-                    completed: true
-                )
-
-                // Decoration badge — StickerText
+            // Header
+            HStack {
+                Text("Pick a decoration")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(Color.dsPrimaryText)
+                Spacer()
+                // Preview chip
                 if let deco = previewDecoration, !deco.isEmpty {
-                    UniversalSticker(value: deco, fontSize: 16, outlineWidth: 1.5)
-                        .offset(x: 6, y: 6)
+                    Text(deco)
+                        .font(.system(size: 16))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(
+                            ThemeManager.shared.accentColor.opacity(0.1),
+                            in: Capsule()
+                        )
                 }
             }
+            .padding(.horizontal, DSSpacing.lg)
+            .padding(.bottom, DSSpacing.md)
 
-            // Info
-            VStack(alignment: .leading, spacing: 4) {
-                Text(habit.name)
-                    .font(DSFont.bodyBold())
-                    .foregroundStyle(Color.dsLabel)
-                    .strikethrough(true, color: Color.dsLabel)
+            DSDivider()
 
-                if previewDecoration != nil {
-                    HStack(spacing: 4) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 11))
-                            .foregroundStyle(ThemeManager.shared.accentColor)
-                        Text("Decorated!")
-                            .font(DSFont.caption())
-                            .foregroundStyle(ThemeManager.shared.accentColor)
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: DSSpacing.md) {
+                    // Emoji grid
+                    quickEmojiGrid
+                        .padding(.horizontal, DSSpacing.lg)
+                        .padding(.top, DSSpacing.md)
+
+                    // iOS 17 outline toggle
+                    HStack {
+                        Text("White outline effect")
+                            .font(DSFont.secondary())
+                            .foregroundStyle(Color.dsPrimaryText)
+                        Spacer()
+                        Toggle("", isOn: $outlineEffectEnabled)
+                            .tint(ThemeManager.shared.accentColor)
+                            .labelsHidden()
+                            .frame(width: 44, height: 24)
                     }
-                } else {
-                    Text("Tap an emoji to preview")
-                        .font(DSFont.caption())
-                        .foregroundStyle(Color.dsLabel)
-                }
-            }
+                    .padding(.horizontal, DSSpacing.lg)
 
-            Spacer()
-
-            DSPill(text: habit.frequencyLabel, color: Color.dsIndigo)
-        }
-        .padding(DSSpacing.md)
-        .background(ThemeManager.shared.accentColor.opacity(0.04))
-        .clipShape(RoundedRectangle(cornerRadius: DSRadius.md))
-        .overlay(
-            RoundedRectangle(cornerRadius: DSRadius.md)
-                .strokeBorder(ThemeManager.shared.accentColor.opacity(0.25), lineWidth: 1)
-        )
-        .animation(.spring(response: 0.3), value: previewDecoration)
-    }
-
-    // MARK: - Browse button
-
-    private var browseButton: some View {
-        Button {
-            showingStickerPicker = true
-        } label: {
-            HStack(spacing: DSSpacing.sm) {
-                Image(systemName: "face.smiling")
-                    .font(.system(size: 16))
-                Text("Browse Stickers & Emoji")
-                    .font(DSFont.bodyBold())
-            }
-            .foregroundStyle(Color.dsIndigo)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
-            .background(
-                Color.dsIndigo.opacity(0.06),
-                in: RoundedRectangle(cornerRadius: DSRadius.md)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: DSRadius.md)
-                    .strokeBorder(Color.dsIndigo.opacity(0.15), lineWidth: 1)
-            )
-        }
-        .buttonStyle(.plain)
-    }
-
-    // MARK: - Quick emoji grid
-
-    private var quickEmojiGrid: some View {
-        ScrollView {
-            LazyVGrid(
-                columns: Array(repeating: GridItem(.flexible()), count: 6),
-                spacing: DSSpacing.sm
-            ) {
-                // Clear button
-                Button {
-                    pendingDecoration = nil
-                    habit.setDecoration(nil, for: date)
-                } label: {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: DSRadius.sm)
-                            .fill(Color.dsBorder.opacity(0.4))
-                            .aspectRatio(1, contentMode: .fit)
-                        Text("skip")
-                            .font(DSFont.caption(10))
-                            .foregroundStyle(Color.dsLabel)
-                    }
-                }
-                .buttonStyle(.plain)
-
-                ForEach(quickEmojis, id: \.self) { emoji in
+                    // Browse device stickers
                     Button {
-                        withAnimation(.spring(response: 0.25)) {
-                            pendingDecoration = emoji
-                        }
+                        showingStickerPicker = true
                     } label: {
-                        StickerText(text: emoji, fontSize: 30, outlineWidth: 2)
+                        Text("Browse device stickers")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(Color.dsPrimaryText)
                             .frame(maxWidth: .infinity)
-                            .aspectRatio(1, contentMode: .fit)
-                            .background(
-                                pendingDecoration == emoji
-                                    ? ThemeManager.shared.accentColor.opacity(0.12)
-                                    : Color.clear,
-                                in: RoundedRectangle(cornerRadius: DSRadius.sm)
-                            )
+                            .frame(height: 44)
+                            .background(Color.dsCardBackground,
+                                        in: RoundedRectangle(cornerRadius: 10))
                             .overlay(
-                                RoundedRectangle(cornerRadius: DSRadius.sm)
-                                    .strokeBorder(
-                                        pendingDecoration == emoji
-                                            ? ThemeManager.shared.accentColor.opacity(0.4)
-                                            : Color.clear,
-                                        lineWidth: 1.5
-                                    )
+                                RoundedRectangle(cornerRadius: 10)
+                                    .strokeBorder(Color.dsBorder, lineWidth: 0.5)
                             )
                     }
                     .buttonStyle(.plain)
+                    .padding(.horizontal, DSSpacing.lg)
+
+                    // Apply button
+                    Button {
+                        applyAndDismiss()
+                    } label: {
+                        Text("Apply decoration")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .background(
+                                pendingDecoration != nil
+                                    ? ThemeManager.shared.accentColor
+                                    : Color.dsBorder,
+                                in: RoundedRectangle(cornerRadius: 10)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(pendingDecoration == nil)
+                    .padding(.horizontal, DSSpacing.lg)
+
+                    // Skip link
+                    Button {
+                        onDismiss?()
+                        dismiss()
+                    } label: {
+                        Text("Mark complete without decoration")
+                            .font(DSFont.caption())
+                            .foregroundStyle(Color.dsLabel)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.bottom, DSSpacing.lg)
                 }
             }
-            .padding(DSSpacing.md)
         }
+        .background(Color.dsPageBackground)
+        .presentationDetents([.medium])
+        .presentationDragIndicator(.hidden)
+        .sheet(isPresented: $showingStickerPicker) {
+            StickerPickerSheet(
+                selectedEmoji: Binding(
+                    get: { pendingDecoration ?? "" },
+                    set: { emoji in
+                        if !emoji.isEmpty { pendingDecoration = emoji }
+                    }
+                ),
+                selectedSticker: Binding(
+                    get: { nil },
+                    set: { img in
+                        guard let img, let data = img.pngData() else { return }
+                        pendingDecoration = "sticker:" + data.base64EncodedString()
+                    }
+                )
+            )
+        }
+    }
+
+    // MARK: - Emoji grid (5 columns per spec)
+
+    private var quickEmojiGrid: some View {
+        LazyVGrid(
+            columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 5),
+            spacing: 8
+        ) {
+            ForEach(quickEmojis, id: \.self) { emoji in
+                Button {
+                    withAnimation(.easeOut(duration: 0.1)) {
+                        pendingDecoration = pendingDecoration == emoji
+                            ? nil : emoji
+                    }
+                } label: {
+                    Group {
+                        if outlineEffectEnabled {
+                            StickerText(text: emoji,
+                                        fontSize: 28,
+                                        outlineWidth: 2)
+                        } else {
+                            Text(emoji)
+                                .font(.system(size: 28))
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 44)
+                    .background(
+                        Color(hex: "F5F5F3"),
+                        in: RoundedRectangle(cornerRadius: 8)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(
+                                pendingDecoration == emoji
+                                    ? Color.dsPrimaryText
+                                    : Color.clear,
+                                lineWidth: 1.5
+                            )
+                    )
+                    .scaleEffect(pendingDecoration == emoji ? 1.1 : 1.0)
+                    .animation(.easeOut(duration: 0.1),
+                               value: pendingDecoration)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    // MARK: - Apply
+
+    private func applyAndDismiss() {
+        if let pending = pendingDecoration {
+            habit.setDecoration(pending, for: date)
+        }
+        onDismiss?()
+        dismiss()
     }
 
     let quickEmojis: [String] = [

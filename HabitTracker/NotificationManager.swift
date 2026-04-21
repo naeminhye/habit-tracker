@@ -30,26 +30,35 @@ final class NotificationManager {
     func schedule(for habit: Habit) {
         guard let reminderTime = habit.reminderTime else { return }
 
-        let content = UNMutableNotificationContent()
-        content.title = "\(habit.emoji) Time for: \(habit.name)"
-        content.body = habit.currentStreak > 0
-            ? "Keep your \(habit.currentStreak)-day streak alive! 🔥"
-            : "Start building your streak today!"
-        content.sound = .default
-        content.badge = 1
+        UNUserNotificationCenter.current()
+            .getNotificationSettings { settings in
+                guard settings.authorizationStatus == .authorized else { return }
 
-        let components = Calendar.current.dateComponents([.hour, .minute], from: reminderTime)
-        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
+                let content = UNMutableNotificationContent()
+                content.title = "\(habit.emoji) Time for: \(habit.name)"
+                content.body = habit.currentStreak > 0
+                    ? "Keep your \(habit.currentStreak)-day streak alive! 🔥"
+                    : "Start building your streak today!"
+                content.sound = .default
+                content.badge = 1
 
-        let request = UNNotificationRequest(
-            identifier: habit.id.uuidString,
-            content: content,
-            trigger: trigger
-        )
+                let components = Calendar.current.dateComponents(
+                    [.hour, .minute], from: reminderTime
+                )
+                let trigger = UNCalendarNotificationTrigger(
+                    dateMatching: components, repeats: true
+                )
 
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error { print("Failed to schedule: \(error)") }
-        }
+                let request = UNNotificationRequest(
+                    identifier: habit.id.uuidString,
+                    content: content,
+                    trigger: trigger
+                )
+
+                UNUserNotificationCenter.current().add(request) { error in
+                    if let error { print("Failed to schedule: \(error)") }
+                }
+            }
     }
 
     // MARK: - Cancel

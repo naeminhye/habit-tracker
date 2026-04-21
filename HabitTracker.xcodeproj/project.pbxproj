@@ -7,6 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B8640C702F975DD0006EE8D4 /* FocusLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8640C6F2F975DD0006EE8D4 /* FocusLiveActivity.swift */; };
+		B8640C722F975DE2006EE8D4 /* LiveActivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8640C712F975DE2006EE8D4 /* LiveActivityManager.swift */; };
+		B8640C732F975E8D006EE8D4 /* LiveActivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8640C712F975DE2006EE8D4 /* LiveActivityManager.swift */; };
+		B8640C762F975EDA006EE8D4 /* FocusLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8640C6F2F975DD0006EE8D4 /* FocusLiveActivity.swift */; };
+		B8640C782F976057006EE8D4 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8640C772F976057006EE8D4 /* OnboardingView.swift */; };
+		B8640C7B2F976A0A006EE8D4 /* CompletionToastView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8640C7A2F976A0A006EE8D4 /* CompletionToastView.swift */; };
+		B890A53D2F975AE200693532 /* HabitDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B890A53C2F975AE200693532 /* HabitDetailView.swift */; };
 		B8B8A0212F94A1D700513F36 /* HabitTrackerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0202F94A1D700513F36 /* HabitTrackerApp.swift */; };
 		B8B8A0232F94A1D700513F36 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0222F94A1D700513F36 /* ContentView.swift */; };
 		B8B8A0272F94A1D900513F36 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B8B8A0262F94A1D900513F36 /* Assets.xcassets */; };
@@ -25,7 +32,6 @@
 		B8B8A0502F94C71200513F36 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B8B8A04F2F94C71200513F36 /* Assets.xcassets */; };
 		B8B8A0542F94C71200513F36 /* HabitWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B8B8A0442F94C70F00513F36 /* HabitWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		B8B8A05A2F94C72800513F36 /* Habit.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0302F94A21D00513F36 /* Habit.swift */; };
-		B8B8A05B2F94C73900513F36 /* ThemeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A03A2F94A77D00513F36 /* ThemeManager.swift */; };
 		B8B8A05F2F94C79C00513F36 /* SharedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A05E2F94C79C00513F36 /* SharedStore.swift */; };
 		B8B8A0602F94C79C00513F36 /* SharedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A05E2F94C79C00513F36 /* SharedStore.swift */; };
 		B8B8A0622F94E58100513F36 /* HabitColorPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0612F94E58100513F36 /* HabitColorPicker.swift */; };
@@ -33,15 +39,9 @@
 		B8B8A0652F94E59A00513F36 /* TagManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0642F94E59A00513F36 /* TagManagerView.swift */; };
 		B8B8A0662F94E59A00513F36 /* TagManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0642F94E59A00513F36 /* TagManagerView.swift */; };
 		B8B8A0682F94E5D400513F36 /* TagBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0672F94E5D400513F36 /* TagBadge.swift */; };
-		B8B8A0692F94E5D400513F36 /* TagBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0672F94E5D400513F36 /* TagBadge.swift */; };
 		B8B8A06B2F94EB0E00513F36 /* MonthCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A06A2F94EB0E00513F36 /* MonthCalendarView.swift */; };
-		B8B8A06C2F94EB0E00513F36 /* MonthCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A06A2F94EB0E00513F36 /* MonthCalendarView.swift */; };
-		B8B8A06D2F94EBFA00513F36 /* DecorationPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A03C2F94A79500513F36 /* DecorationPickerView.swift */; };
 		B8B8A06F2F94EC4800513F36 /* ShareProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A06E2F94EC4800513F36 /* ShareProgressView.swift */; };
-		B8B8A0702F94EC4800513F36 /* ShareProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A06E2F94EC4800513F36 /* ShareProgressView.swift */; };
-		B8B8A0722F94ECE700513F36 /* ProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0342F94A41600513F36 /* ProgressView.swift */; };
 		B8B8A0742F94EF4400513F36 /* StickerText.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0732F94EF4400513F36 /* StickerText.swift */; };
-		B8B8A0752F94EF4400513F36 /* StickerText.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0732F94EF4400513F36 /* StickerText.swift */; };
 		B8B8A0772F95120A00513F36 /* AppIconGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0762F95120A00513F36 /* AppIconGenerator.swift */; };
 		B8B8A0782F95120A00513F36 /* AppIconGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0762F95120A00513F36 /* AppIconGenerator.swift */; };
 		B8B8A07A2F9515B400513F36 /* WeekdayPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0792F9515B400513F36 /* WeekdayPicker.swift */; };
@@ -49,9 +49,7 @@
 		B8B8A07D2F95180300513F36 /* FocusSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A07C2F95180300513F36 /* FocusSession.swift */; };
 		B8B8A07E2F95180300513F36 /* FocusSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A07C2F95180300513F36 /* FocusSession.swift */; };
 		B8B8A0802F95185A00513F36 /* FocusTimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A07F2F95185A00513F36 /* FocusTimerView.swift */; };
-		B8B8A0812F95185A00513F36 /* FocusTimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A07F2F95185A00513F36 /* FocusTimerView.swift */; };
 		B8B8A0832F951A9000513F36 /* FocusTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0822F951A9000513F36 /* FocusTabView.swift */; };
-		B8B8A0842F951A9000513F36 /* FocusTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0822F951A9000513F36 /* FocusTabView.swift */; };
 		B8B8A0862F95D25A00513F36 /* HabitGoal.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0852F95D25A00513F36 /* HabitGoal.swift */; };
 		B8B8A0872F95D25A00513F36 /* HabitGoal.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0852F95D25A00513F36 /* HabitGoal.swift */; };
 		B8B8A0892F95D26C00513F36 /* Badge.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0882F95D26C00513F36 /* Badge.swift */; };
@@ -59,27 +57,15 @@
 		B8B8A08C2F95D27900513F36 /* Milestone.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A08B2F95D27900513F36 /* Milestone.swift */; };
 		B8B8A08D2F95D27900513F36 /* Milestone.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A08B2F95D27900513F36 /* Milestone.swift */; };
 		B8B8A08F2F95D9E100513F36 /* GoalSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A08E2F95D9E100513F36 /* GoalSetupView.swift */; };
-		B8B8A0902F95D9E100513F36 /* GoalSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A08E2F95D9E100513F36 /* GoalSetupView.swift */; };
 		B8B8A0922F95D9F500513F36 /* GoalProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0912F95D9F500513F36 /* GoalProgressView.swift */; };
-		B8B8A0932F95D9F500513F36 /* GoalProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0912F95D9F500513F36 /* GoalProgressView.swift */; };
 		B8B8A0952F95E09D00513F36 /* MilestoneEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0942F95E09D00513F36 /* MilestoneEngine.swift */; };
-		B8B8A0962F95E09D00513F36 /* MilestoneEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0942F95E09D00513F36 /* MilestoneEngine.swift */; };
 		B8B8A0982F95E0AB00513F36 /* MilestoneBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0972F95E0AB00513F36 /* MilestoneBannerView.swift */; };
-		B8B8A0992F95E0AB00513F36 /* MilestoneBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0972F95E0AB00513F36 /* MilestoneBannerView.swift */; };
 		B8B8A09B2F95E1EF00513F36 /* CustomMilestoneCreator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A09A2F95E1EF00513F36 /* CustomMilestoneCreator.swift */; };
-		B8B8A09C2F95E1EF00513F36 /* CustomMilestoneCreator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A09A2F95E1EF00513F36 /* CustomMilestoneCreator.swift */; };
 		B8B8A09E2F95E25F00513F36 /* AchievementsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A09D2F95E25F00513F36 /* AchievementsView.swift */; };
-		B8B8A09F2F95E25F00513F36 /* AchievementsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A09D2F95E25F00513F36 /* AchievementsView.swift */; };
-		B8B8A0A02F95E2A100513F36 /* EmojiPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0382F94A6EC00513F36 /* EmojiPickerView.swift */; };
-		B8B8A0A42F95EE5F00513F36 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0A12F95E41700513F36 /* DesignSystem.swift */; };
 		B8B8A0A52F95EE6000513F36 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0A12F95E41700513F36 /* DesignSystem.swift */; };
 		B8B8A0A72F95F0C500513F36 /* StickerPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0A62F95F0C500513F36 /* StickerPickerView.swift */; };
-		B8B8A0A82F95F0C500513F36 /* StickerPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0A62F95F0C500513F36 /* StickerPickerView.swift */; };
 		B8B8A0AA2F95F4E900513F36 /* StreakStripView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0A92F95F4E900513F36 /* StreakStripView.swift */; };
-		B8B8A0AB2F95F4E900513F36 /* StreakStripView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0A92F95F4E900513F36 /* StreakStripView.swift */; };
 		B8B8A0AD2F95F96A00513F36 /* HabitRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0AC2F95F96A00513F36 /* HabitRowView.swift */; };
-		B8B8A0AE2F95F96A00513F36 /* HabitRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0AC2F95F96A00513F36 /* HabitRowView.swift */; };
-		B8B8A0AF2F95FAE300513F36 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B8A0362F94A4BB00513F36 /* NotificationManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -107,6 +93,12 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		B8640C6E2F975D32006EE8D4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		B8640C6F2F975DD0006EE8D4 /* FocusLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusLiveActivity.swift; sourceTree = "<group>"; };
+		B8640C712F975DE2006EE8D4 /* LiveActivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityManager.swift; sourceTree = "<group>"; };
+		B8640C772F976057006EE8D4 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		B8640C7A2F976A0A006EE8D4 /* CompletionToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompletionToastView.swift; sourceTree = "<group>"; };
+		B890A53C2F975AE200693532 /* HabitDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitDetailView.swift; sourceTree = "<group>"; };
 		B8B8A01D2F94A1D700513F36 /* HabitTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HabitTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B8B8A0202F94A1D700513F36 /* HabitTrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTrackerApp.swift; sourceTree = "<group>"; };
 		B8B8A0222F94A1D700513F36 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -199,16 +191,19 @@
 		B8B8A01F2F94A1D700513F36 /* HabitTracker */ = {
 			isa = PBXGroup;
 			children = (
+				B8640C6E2F975D32006EE8D4 /* Info.plist */,
 				B8B8A05C2F94C75000513F36 /* HabitTracker.entitlements */,
 				B8B8A09D2F95E25F00513F36 /* AchievementsView.swift */,
 				B8B8A0322F94A2A600513F36 /* AddHabitView.swift */,
 				B8B8A0762F95120A00513F36 /* AppIconGenerator.swift */,
 				B8B8A0882F95D26C00513F36 /* Badge.swift */,
+				B8640C7A2F976A0A006EE8D4 /* CompletionToastView.swift */,
 				B8B8A0222F94A1D700513F36 /* ContentView.swift */,
 				B8B8A09A2F95E1EF00513F36 /* CustomMilestoneCreator.swift */,
 				B8B8A03C2F94A79500513F36 /* DecorationPickerView.swift */,
 				B8B8A0A12F95E41700513F36 /* DesignSystem.swift */,
 				B8B8A0382F94A6EC00513F36 /* EmojiPickerView.swift */,
+				B8640C6F2F975DD0006EE8D4 /* FocusLiveActivity.swift */,
 				B8B8A0822F951A9000513F36 /* FocusTabView.swift */,
 				B8B8A07F2F95185A00513F36 /* FocusTimerView.swift */,
 				B8B8A07C2F95180300513F36 /* FocusSession.swift */,
@@ -216,14 +211,17 @@
 				B8B8A08E2F95D9E100513F36 /* GoalSetupView.swift */,
 				B8B8A0302F94A21D00513F36 /* Habit.swift */,
 				B8B8A0612F94E58100513F36 /* HabitColorPicker.swift */,
+				B890A53C2F975AE200693532 /* HabitDetailView.swift */,
 				B8B8A0852F95D25A00513F36 /* HabitGoal.swift */,
 				B8B8A0AC2F95F96A00513F36 /* HabitRowView.swift */,
 				B8B8A0202F94A1D700513F36 /* HabitTrackerApp.swift */,
+				B8640C712F975DE2006EE8D4 /* LiveActivityManager.swift */,
 				B8B8A08B2F95D27900513F36 /* Milestone.swift */,
 				B8B8A0972F95E0AB00513F36 /* MilestoneBannerView.swift */,
 				B8B8A0942F95E09D00513F36 /* MilestoneEngine.swift */,
 				B8B8A06A2F94EB0E00513F36 /* MonthCalendarView.swift */,
 				B8B8A0362F94A4BB00513F36 /* NotificationManager.swift */,
+				B8640C772F976057006EE8D4 /* OnboardingView.swift */,
 				B8B8A0342F94A41600513F36 /* ProgressView.swift */,
 				B8B8A03E2F94A7A800513F36 /* SettingsView.swift */,
 				B8B8A06E2F94EC4800513F36 /* ShareProgressView.swift */,
@@ -370,6 +368,8 @@
 			files = (
 				B8B8A03D2F94A79500513F36 /* DecorationPickerView.swift in Sources */,
 				B8B8A0892F95D26C00513F36 /* Badge.swift in Sources */,
+				B8640C722F975DE2006EE8D4 /* LiveActivityManager.swift in Sources */,
+				B890A53D2F975AE200693532 /* HabitDetailView.swift in Sources */,
 				B8B8A0652F94E59A00513F36 /* TagManagerView.swift in Sources */,
 				B8B8A0922F95D9F500513F36 /* GoalProgressView.swift in Sources */,
 				B8B8A0392F94A6ED00513F36 /* EmojiPickerView.swift in Sources */,
@@ -390,9 +390,12 @@
 				B8B8A0352F94A41600513F36 /* ProgressView.swift in Sources */,
 				B8B8A07A2F9515B400513F36 /* WeekdayPicker.swift in Sources */,
 				B8B8A0232F94A1D700513F36 /* ContentView.swift in Sources */,
+				B8640C782F976057006EE8D4 /* OnboardingView.swift in Sources */,
 				B8B8A05F2F94C79C00513F36 /* SharedStore.swift in Sources */,
 				B8B8A0622F94E58100513F36 /* HabitColorPicker.swift in Sources */,
 				B8B8A0802F95185A00513F36 /* FocusTimerView.swift in Sources */,
+				B8640C7B2F976A0A006EE8D4 /* CompletionToastView.swift in Sources */,
+				B8640C702F975DD0006EE8D4 /* FocusLiveActivity.swift in Sources */,
 				B8B8A0772F95120A00513F36 /* AppIconGenerator.swift in Sources */,
 				B8B8A0742F94EF4400513F36 /* StickerText.swift in Sources */,
 				B8B8A0AD2F95F96A00513F36 /* HabitRowView.swift in Sources */,
@@ -411,37 +414,18 @@
 			buildActionMask = 2147483647;
 			files = (
 				B8B8A07E2F95180300513F36 /* FocusSession.swift in Sources */,
-				B8B8A09C2F95E1EF00513F36 /* CustomMilestoneCreator.swift in Sources */,
-				B8B8A06D2F94EBFA00513F36 /* DecorationPickerView.swift in Sources */,
 				B8B8A0602F94C79C00513F36 /* SharedStore.swift in Sources */,
-				B8B8A0A42F95EE5F00513F36 /* DesignSystem.swift in Sources */,
+				B8640C732F975E8D006EE8D4 /* LiveActivityManager.swift in Sources */,
 				B8B8A0662F94E59A00513F36 /* TagManagerView.swift in Sources */,
-				B8B8A0702F94EC4800513F36 /* ShareProgressView.swift in Sources */,
-				B8B8A0A02F95E2A100513F36 /* EmojiPickerView.swift in Sources */,
 				B8B8A05A2F94C72800513F36 /* Habit.swift in Sources */,
+				B8640C762F975EDA006EE8D4 /* FocusLiveActivity.swift in Sources */,
 				B8B8A04E2F94C70F00513F36 /* HabitWidgets.swift in Sources */,
-				B8B8A0692F94E5D400513F36 /* TagBadge.swift in Sources */,
-				B8B8A0962F95E09D00513F36 /* MilestoneEngine.swift in Sources */,
-				B8B8A06C2F94EB0E00513F36 /* MonthCalendarView.swift in Sources */,
 				B8B8A0872F95D25A00513F36 /* HabitGoal.swift in Sources */,
 				B8B8A0782F95120A00513F36 /* AppIconGenerator.swift in Sources */,
 				B8B8A0632F94E58100513F36 /* HabitColorPicker.swift in Sources */,
-				B8B8A0992F95E0AB00513F36 /* MilestoneBannerView.swift in Sources */,
-				B8B8A0902F95D9E100513F36 /* GoalSetupView.swift in Sources */,
-				B8B8A0812F95185A00513F36 /* FocusTimerView.swift in Sources */,
-				B8B8A05B2F94C73900513F36 /* ThemeManager.swift in Sources */,
-				B8B8A0752F94EF4400513F36 /* StickerText.swift in Sources */,
 				B8B8A07B2F9515B400513F36 /* WeekdayPicker.swift in Sources */,
-				B8B8A0AF2F95FAE300513F36 /* NotificationManager.swift in Sources */,
-				B8B8A0842F951A9000513F36 /* FocusTabView.swift in Sources */,
-				B8B8A0722F94ECE700513F36 /* ProgressView.swift in Sources */,
-				B8B8A09F2F95E25F00513F36 /* AchievementsView.swift in Sources */,
-				B8B8A0A82F95F0C500513F36 /* StickerPickerView.swift in Sources */,
 				B8B8A08D2F95D27900513F36 /* Milestone.swift in Sources */,
-				B8B8A0AB2F95F4E900513F36 /* StreakStripView.swift in Sources */,
-				B8B8A0932F95D9F500513F36 /* GoalProgressView.swift in Sources */,
 				B8B8A08A2F95D26C00513F36 /* Badge.swift in Sources */,
-				B8B8A0AE2F95F96A00513F36 /* HabitRowView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -588,6 +572,7 @@
 				DEVELOPMENT_TEAM = Y8XMXKKJ28;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HabitTracker/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -618,6 +603,7 @@
 				DEVELOPMENT_TEAM = Y8XMXKKJ28;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HabitTracker/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

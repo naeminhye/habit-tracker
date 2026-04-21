@@ -11,12 +11,20 @@ struct HabitColorPicker: View {
     @Binding var selectedHex: String
 
     let colors: [(name: String, hex: String)] = [
-        ("Blue",    "007AFF"), ("Purple",  "AF52DE"), ("Pink",    "FF2D55"),
-        ("Red",     "FF3B30"), ("Orange",  "FF9500"), ("Yellow",  "FFCC00"),
-        ("Green",   "34C759"), ("Teal",    "5AC8FA"), ("Mint",    "00C7BE"),
-        ("Indigo",  "5856D6"), ("Brown",   "A2845E"), ("Gray",    "8E8E93"),
+        ("Teal",     "4A9E8A"),
+        ("Coral",    "CC6B5A"),
+        ("Orange",   "B87840"),
+        ("Mint",     "3E9E70"),
+        ("Blue",     "4A7ECC"),
+        ("Indigo",   "6A5ECC"),
+        ("Purple",   "8A4ECC"),
+        ("Pink",     "CC4A7A"),
+        ("Green",    "3A9E7A"),
+        ("Yellow",   "8C8A30"),
+        ("Brown",    "7A6050"),
+        ("Graphite", "7A7A72"),
     ]
-
+    
     var body: some View {
         LazyVGrid(
             columns: Array(repeating: GridItem(.flexible()), count: 6),
@@ -29,7 +37,7 @@ struct HabitColorPicker: View {
                 } label: {
                     ZStack {
                         Circle()
-                            .fill(Color(hex: item.hex))
+                            .fill(Color(item.hex))
                             .frame(width: 40, height: 40)
                         if isSelected {
                             Circle()

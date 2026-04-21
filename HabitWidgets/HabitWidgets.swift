@@ -247,5 +247,7 @@ struct HabitWidgetBundle: WidgetBundle {
     var body: some Widget {
         HabitHomeWidget()
         HabitLockScreenWidget()
+        // Live Activity is registered automatically
+        // via ActivityKit — no explicit registration needed
     }
 }

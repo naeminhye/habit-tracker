@@ -25,7 +25,7 @@ struct HabitProgressView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.dsSurface.ignoresSafeArea()
+                Color.dsPageBackground.ignoresSafeArea()
                 VStack(spacing: 0) {
                     // Custom nav bar
                     navBar
@@ -55,11 +55,11 @@ struct HabitProgressView: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text("PROGRESS")
-                    .font(DSFont.capsLabel())
+                    .font(DSFont.overline())
                     .foregroundStyle(Color.dsLabel)
                     .kerning(1)
                 Text(Date().formatted(.dateTime.month(.wide).year()))
-                    .font(DSFont.title(20))
+                    .font(DSFont.displayM())
                     .foregroundStyle(Color.dsIndigo)
             }
 
@@ -123,7 +123,7 @@ struct HabitProgressView: View {
             DSStatBadge(
                 value: "\(done)/\(total)",
                 label: "TODAY",
-                color: .dsCoral
+                color: .dsAccent
             )
             dsVerticalDivider
             DSStatBadge(
@@ -343,16 +343,20 @@ struct HabitProgressCard: View {
     // MARK: - Helpers
 
     private func cellFill(completed: Bool, future: Bool, index: Int) -> Color {
-        if future { return Color.dsBorder.opacity(0.4) }
-        guard completed else { return Color.dsBorder }
-        return habit.accentColor
+        if future { return Color.htHm0 }
+        guard completed else { return Color.htHmMiss }
+        // Level based on streak/goal
+        let progress = habit.progressTowardGoal()
+        if progress >= 1.5 { return Color.htHm3 }
+        if progress >= 1.0 { return Color.htHm2 }
+        return Color.htHm1
     }
-
+    
     private func habitRateColor(_ rate: Double) -> Color {
         switch rate {
         case 0.7...: return .dsMint
         case 0.4...: return .dsGold
-        default:     return .dsCoral
+        default:     return .accentColor
         }
     }
 

@@ -2,7 +2,7 @@
 //  AchievementsView.swift
 //  HabitTracker
 //
-//  Created by JaceyNguyen on 20/04/2026.
+//  Created by BangChitty on 20/04/2026.
 //
 
 import SwiftUI
@@ -29,7 +29,7 @@ struct AchievementsView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.dsSurface.ignoresSafeArea()
+                Color.dsPageBackground.ignoresSafeArea()
                 VStack(spacing: 0) {
                     navBar
                     heroStrip
@@ -65,11 +65,11 @@ struct AchievementsView: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text("ACHIEVEMENTS")
-                    .font(DSFont.capsLabel())
+                    .font(DSFont.overline())
                     .foregroundStyle(Color.dsLabel)
                     .kerning(1)
                 Text("\(unlockedBadges.count) badges unlocked")
-                    .font(DSFont.title(20))
+                    .font(DSFont.displayM())
                     .foregroundStyle(Color.dsIndigo)
             }
             Spacer()
@@ -430,7 +430,7 @@ struct DSMilestoneRow: View {
                             reached ? Color.dsIndigo : Color.dsLabel
                         )
                     if milestone.isCustom {
-                        DSPill(text: "custom", color: .dsCoral)
+                        DSPill(text: "custom", color: .accentColor)
                     }
                 }
                 Text(milestone.progressDescription)
@@ -458,7 +458,7 @@ struct DSMilestoneRow: View {
             } else {
                 VStack(spacing: 2) {
                     Text("\(milestone.targetValue)")
-                        .font(DSFont.hero(18))
+                        .font(DSFont.displayL())
                         .foregroundStyle(Color.dsIndigo)
                     Text(milestone.type.displayName.lowercased())
                         .font(DSFont.caption(9))
@@ -535,7 +535,7 @@ struct DSHabitAchievementCard: View {
                 // Milestone fraction
                 VStack(alignment: .trailing, spacing: 2) {
                     Text("\(reached)/\(total)")
-                        .font(DSFont.hero(18))
+                        .font(DSFont.displayM())
                         .foregroundStyle(habit.accentColor)
                     Text("milestones")
                         .font(DSFont.caption(10))

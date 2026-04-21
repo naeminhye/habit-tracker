@@ -2,7 +2,7 @@
 //  StreakStripView.swift
 //  HabitTracker
 //
-//  Created by JaceyNguyen on 20/04/2026.
+//  Created by BangChitty on 20/04/2026.
 //
 
 import SwiftUI
@@ -10,7 +10,7 @@ import SwiftData
 
 struct StreakStripView: View {
     let habits: [Habit]
-
+    
     // Last 7 days ending today
     private var days: [Date] {
         let cal = Calendar.current
@@ -19,7 +19,7 @@ struct StreakStripView: View {
             cal.date(byAdding: .day, value: -$0, to: today)
         }
     }
-
+    
     // Was at least 1 habit (or goal) completed on this date?
     private func wasActiveOn(_ date: Date) -> Bool {
         habits.contains { habit in
@@ -40,14 +40,14 @@ struct StreakStripView: View {
             return habit.isCompleted(on: date)
         }
     }
-
+    
     // Is this day part of the current streak?
     private func isStreaking(on date: Date) -> Bool {
         let cal = Calendar.current
         let today = cal.startOfDay(for: Date())
         // Only days up to today can be part of streak
         guard date <= today else { return false }
-
+        
         // Walk back from today — if any day breaks, stop
         var check = today
         while check >= date {
@@ -57,20 +57,20 @@ struct StreakStripView: View {
         }
         return false
     }
-
+    
     // Did the streak break before this day?
     private func isBreakDay(_ date: Date) -> Bool {
         let cal = Calendar.current
         let today = cal.startOfDay(for: Date())
         guard date < today else { return false }
-
+        
         // Not active on this day
         guard !wasActiveOn(date) else { return false }
-
+        
         // Next day must be active (streak continues after this break)
         let nextDay = cal.date(byAdding: .day, value: 1, to: date)!
         guard wasActiveOn(nextDay) else { return false }
-
+        
         // The day BEFORE this one must also have been active
         // — meaning a real streak existed before it broke here
         let prevDay = cal.date(byAdding: .day, value: -1, to: date)!
@@ -87,10 +87,9 @@ struct StreakStripView: View {
         }
         return streak
     }
-
+    
     var body: some View {
         VStack(spacing: DSSpacing.sm) {
-            // Days strip
             HStack(spacing: 0) {
                 ForEach(days, id: \.self) { day in
                     DayStreakCell(
@@ -102,23 +101,14 @@ struct StreakStripView: View {
                     )
                 }
             }
-
-            // Motivational message
             if currentStreak > 0 {
                 streakMessage
             }
         }
-        .padding(DSSpacing.md)
-        .background(Color.dsBackground,
-                    in: RoundedRectangle(cornerRadius: DSRadius.md))
-        .overlay(
-            RoundedRectangle(cornerRadius: DSRadius.md)
-                .strokeBorder(Color.dsBorder, lineWidth: 1)
-        )
     }
-
+    
     // MARK: - Streak message
-
+    
     private var streakMessage: some View {
         let message = streakMotivation
         return HStack(spacing: DSSpacing.sm) {
@@ -135,7 +125,7 @@ struct StreakStripView: View {
             in: RoundedRectangle(cornerRadius: DSRadius.sm)
         )
     }
-
+    
     private var streakMotivation: (emoji: String, text: String) {
         switch currentStreak {
         case 1:      return ("🌱", "Great start! Come back tomorrow.")
@@ -159,27 +149,27 @@ struct DayStreakCell: View {
     let isToday: Bool
     let isStreaking: Bool
     let isFrozen: Bool
-
+    
     private var dayLabel: String {
         let f = DateFormatter()
         f.dateFormat = "EEE"
         return f.string(from: date).uppercased()
     }
-
+    
     private var isFuture: Bool {
         date > Calendar.current.startOfDay(for: Date())
     }
-
+    
     var body: some View {
         VStack(spacing: 6) {
             // Day label
             Text(dayLabel)
-                .font(DSFont.capsLabel(10))
+                .font(DSFont.overline())
                 .foregroundStyle(isToday
-                    ? ThemeManager.shared.accentColor
-                    : Color.dsLabel)
+                                 ? ThemeManager.shared.accentColor
+                                 : Color.dsLabel)
                 .kerning(0.3)
-
+            
             // Circle with icon
             ZStack {
                 Circle()
@@ -189,7 +179,7 @@ struct DayStreakCell: View {
                         Circle()
                             .strokeBorder(circleBorder, lineWidth: isToday ? 2 : 1)
                     )
-
+                
                 if isFrozen {
                     // Frozen fire (Duolingo style)
                     Text("🧊")
@@ -217,7 +207,7 @@ struct DayStreakCell: View {
         .frame(maxWidth: .infinity)
         .opacity(isFuture ? 0.3 : 1.0)
     }
-
+    
     private var circleFill: Color {
         if isFrozen { return Color(hex: "C8E8F8") }
         if isActive && isToday { return ThemeManager.shared.accentColor }
@@ -225,7 +215,7 @@ struct DayStreakCell: View {
         if isToday { return Color.clear }
         return Color.dsBorder.opacity(0.4)
     }
-
+    
     private var circleBorder: Color {
         if isFrozen { return Color(hex: "7EC8E3") }
         if isToday && !isActive {

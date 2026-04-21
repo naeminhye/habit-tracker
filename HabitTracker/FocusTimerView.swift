@@ -2,7 +2,7 @@
 //  FocusTimerView.swift
 //  HabitTracker
 //
-//  Created by JaceyNguyen on 19/04/2026.
+//  Created by BangChitty on 19/04/2026.
 //
 
 import SwiftUI
@@ -23,6 +23,7 @@ extension FocusTimerView {
     }
 }
 
+@MainActor
 struct FocusTimerView: View {
     @Bindable var habit: Habit
     var existingSession: FocusSession? = nil
@@ -125,8 +126,7 @@ struct FocusTimerView: View {
     
     private var preSessionView: some View {
         ZStack {
-            Color.dsSurface.ignoresSafeArea()
-
+            Color.dsPageBackground.ignoresSafeArea()
             VStack(spacing: 0) {
                 // Header
                 HStack {
@@ -158,7 +158,7 @@ struct FocusTimerView: View {
                         size: 80
                     )
                     Text(habit.name)
-                        .font(DSFont.title(22))
+                        .font(DSFont.displayM())
                         .foregroundStyle(Color.dsIndigo)
                         .lineLimit(2)                    // ← max 2 lines
                         .multilineTextAlignment(.center)
@@ -179,7 +179,7 @@ struct FocusTimerView: View {
                 // Duration picker card
                 VStack(spacing: DSSpacing.md) {
                     Text("DURATION")
-                        .font(DSFont.capsLabel())
+                        .font(DSFont.overline())
                         .foregroundStyle(Color.dsLabel)
                         .kerning(1)
 
@@ -203,7 +203,7 @@ struct FocusTimerView: View {
                                 .foregroundStyle(Color.dsIndigo)
                                 .monospacedDigit()
                             Text("minutes")
-                                .font(DSFont.capsLabel(10))
+                                .font(DSFont.overline())
                                 .foregroundStyle(Color.dsLabel)
                                 .kerning(0.5)
                         }
@@ -312,7 +312,7 @@ struct FocusTimerView: View {
     
     private var sessionView: some View {
         ZStack {
-            (isDeep ? Color.dsDark : Color.dsSurface)
+            (isDeep ? Color.dsAccent : Color.dsSurface)
                 .ignoresSafeArea()
                 .animation(.easeInOut(duration: 0.5), value: isDeep)
 
@@ -453,7 +453,7 @@ struct FocusTimerView: View {
 
                 if let s = session, !s.isCompleted {
                     Text(isPaused ? "PAUSED" : "FOCUSING")
-                        .font(DSFont.capsLabel(11))
+                        .font(DSFont.overline())
                         .foregroundStyle(Color.dsLabel)
                         .kerning(1)
                 } else if isComplete {
@@ -461,7 +461,7 @@ struct FocusTimerView: View {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(Color.dsMint)
                         Text("COMPLETE")
-                            .font(DSFont.capsLabel(11))
+                            .font(DSFont.overline())
                             .foregroundStyle(Color.dsMint)
                             .kerning(1)
                     }
@@ -598,26 +598,45 @@ struct FocusTimerView: View {
     
     private func startSession() {
         if let existing = existingSession {
-            // Resume existing paused session
             session = existing
             isPaused = false
             startTimer()
             hasStarted = true
+            // Resume Live Activity
+            LiveActivityManager.shared.update(
+                habit: habit,
+                session: existing,
+                isPaused: false
+            )
         } else {
-            // Create new session
             let s = FocusSession(habit: habit, durationSeconds: totalSeconds)
             context.insert(s)
             session = s
             startTimer()
+            // Start Live Activity
+            LiveActivityManager.shared.startActivity(habit: habit, session: s)
         }
     }
     
     private func startTimer() {
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
-            guard !isPaused, let s = session, !s.isCompleted else { return }
-            s.elapsedSeconds += 1
-            if s.elapsedSeconds >= s.durationSeconds {
-                timerCompleted()
+            Task { @MainActor in
+                guard !self.isPaused,
+                      let s = self.session,
+                      !s.isCompleted else { return }
+                s.elapsedSeconds += 1
+
+                if s.elapsedSeconds % 5 == 0 {
+                    LiveActivityManager.shared.update(
+                        habit: self.habit,
+                        session: s,
+                        isPaused: false
+                    )
+                }
+
+                if s.elapsedSeconds >= s.durationSeconds {
+                    self.timerCompleted()
+                }
             }
         }
     }
@@ -626,12 +645,20 @@ struct FocusTimerView: View {
         isPaused.toggle()
         pulseRing = !isPaused
         if isPaused {
-            // Stop timer but keep session alive with current elapsedSeconds
             timer?.invalidate()
             timer = nil
+            if let s = session {
+                LiveActivityManager.shared.update(
+                    habit: habit, session: s, isPaused: true
+                )
+            }
         } else {
-            // Resume from where we left off
             startTimer()
+            if let s = session {
+                LiveActivityManager.shared.update(
+                    habit: habit, session: s, isPaused: false
+                )
+            }
         }
     }
     
@@ -639,15 +666,9 @@ struct FocusTimerView: View {
         timer?.invalidate()
         guard let s = session else { return }
         s.markCompleted()
-
-        if !habit.isCompletedToday {
-            habit.toggleToday()
-        }
-
-        if isDeep {
-            endGuidedAccess()
-        }
-
+        if !habit.isCompletedToday { habit.toggleToday() }
+        if isDeep { endGuidedAccess() }
+        LiveActivityManager.shared.endActivity()    // ← end Live Activity
         let gen = UINotificationFeedbackGenerator()
         gen.notificationOccurred(.success)
     }
@@ -659,9 +680,9 @@ struct FocusTimerView: View {
             s.markCompleted()
             if !habit.isCompletedToday { habit.toggleToday() }
         } else if let s = session, !completed {
-            // Only delete if user explicitly cancels (not pause/exit)
             context.delete(s)
         }
+        LiveActivityManager.shared.endActivity()    // ← end Live Activity
         if isDeep { endGuidedAccess() }
         dismiss()
     }
@@ -670,8 +691,11 @@ struct FocusTimerView: View {
         isPaused = true
         timer?.invalidate()
         timer = nil
-        // Session stays in SwiftData with current elapsedSeconds intact
-        // activeFocusSession in HabitRowView will pick it up automatically
+        if let s = session {
+            LiveActivityManager.shared.update(
+                habit: habit, session: s, isPaused: true
+            )
+        }
         if isDeep { endGuidedAccess() }
         dismiss()
     }

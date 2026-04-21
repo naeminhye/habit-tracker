@@ -12,16 +12,22 @@ import SwiftData
 struct HabitTrackerApp: App {
     @State private var notificationsRequested = false
     @State private var theme = ThemeManager.shared
-    
+    @State private var showingOnboarding = !UserDefaults.standard.bool(
+        forKey: "onboardingComplete"
+    )
+
     var body: some Scene {
         WindowGroup {
             RootView()
                 .preferredColorScheme(theme.effectiveColorScheme)
                 .tint(theme.accentColor)
+                .fullScreenCover(isPresented: $showingOnboarding) {
+                    OnboardingView(isPresented: $showingOnboarding)
+                }
                 .task {
-                    guard !notificationsRequested else { return }
-                    notificationsRequested = true
-                    _ = await NotificationManager.shared.requestPermission()
+//                    guard !notificationsRequested else { return }
+//                    notificationsRequested = true
+//                    _ = await NotificationManager.shared.requestPermission()
                     seedDefaultDataIfNeeded()
                 }
         }

@@ -50,7 +50,7 @@ struct MonthCalendarView: View {
             Spacer()
 
             Text(displayedMonth.formatted(.dateTime.month(.wide).year()))
-                .font(DSFont.title(16))
+                .font(DSFont.title())
                 .foregroundStyle(Color.dsIndigo)
 
             Spacer()
@@ -85,7 +85,7 @@ struct MonthCalendarView: View {
         HStack(spacing: 0) {
             ForEach(["SUN","MON","TUE","WED","THU","FRI","SAT"], id: \.self) { d in
                 Text(d)
-                    .font(DSFont.capsLabel(9))
+                    .font(DSFont.overline())
                     .foregroundStyle(Color.dsLabel)
                     .kerning(0.5)
                     .frame(maxWidth: .infinity)

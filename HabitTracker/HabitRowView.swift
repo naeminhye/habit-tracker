@@ -2,7 +2,7 @@
 //  HabitRowView.swift
 //  HabitTracker
 //
-//  Created by JaceyNguyen on 20/04/2026.
+//  Created by BangChitty on 20/04/2026.
 //
 
 import SwiftUI
@@ -14,252 +14,341 @@ struct HabitRowView: View {
     @Bindable var habit: Habit
     var onEdit: (() -> Void)? = nil
     var onMilestoneUnlocked: (([MilestoneUnlock]) -> Void)? = nil
+    var onCompleted: ((CompletionToast) -> Void)? = nil
 
     @Environment(\.modelContext) private var context
     @State private var bouncing = false
     @State private var showingDecoration = false
     @State private var showingFocus = false
-
-    // Active focus session for this habit
-    private var activeFocusSession: FocusSession? {
-        let habitID = habit.id
-        let descriptor = FetchDescriptor<FocusSession>(
-            predicate: #Predicate {
-                $0.habitID == habitID && !$0.isCompleted
-            }
-        )
-        return try? SharedStore.container.mainContext
-            .fetch(descriptor).first
-    }
-
-    // Focus progress 0.0–1.0
-    private var focusProgress: Double {
-        guard let session = activeFocusSession,
-              session.durationSeconds > 0 else { return 0 }
-        return min(
-            Double(session.elapsedSeconds) / Double(session.durationSeconds),
-            1.0
-        )
-    }
+    @State private var showingDetail = false
 
     private var decoration: String? {
         let d = habit.decoration(for: Date())
         return d?.isEmpty == false ? d : nil
     }
 
+    private var activeFocusSession: FocusSession? {
+        let habitID = habit.id
+        let descriptor = FetchDescriptor<FocusSession>(
+            predicate: #Predicate { $0.habitID == habitID && !$0.isCompleted }
+        )
+        return try? SharedStore.container.mainContext.fetch(descriptor).first
+    }
+
+    private var focusProgress: Double {
+        guard let s = activeFocusSession, s.durationSeconds > 0 else { return 0 }
+        return min(Double(s.elapsedSeconds) / Double(s.durationSeconds), 1.0)
+    }
+
     var body: some View {
         ZStack(alignment: .leading) {
-            // Background layer
-            backgroundLayer
+            // Card bg
+            RoundedRectangle(cornerRadius: DSRadius.card)
+                .fill(habit.isCompletedToday
+                      ? habit.accentColor.opacity(0.04)
+                      : Color.htSurface)
 
-            // Content
-            HStack(spacing: 0) {
-                accentStripe
-                HStack(spacing: DSSpacing.md) {
-                    avatarColumn
-                    infoColumn
-                    Spacer(minLength: 0)
-                    trailingColumn
+            // Focus progress split
+            if focusProgress > 0 && !habit.isCompletedToday {
+                GeometryReader { geo in
+                    HStack(spacing: 0) {
+                        RoundedRectangle(cornerRadius: DSRadius.card)
+                            .fill(habit.accentColor.opacity(0.08))
+                            .frame(width: geo.size.width * focusProgress)
+                            .animation(DSAnim.base, value: focusProgress)
+                        Spacer(minLength: 0)
+                    }
                 }
-                .padding(.vertical, DSSpacing.md)
-                .padding(.trailing, DSSpacing.md)
+            }
+
+            HStack(spacing: 0) {
+                // 3pt accent bar
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(habit.accentColor)
+                    .frame(width: 3)
+                    .frame(maxHeight: .infinity)
+                    .padding(.vertical, 10)
+                    .padding(.leading, 10)
+
+                HStack(spacing: 10) {
+                    // Avatar
+                    avatarView
+                    // Content
+                    contentColumn
+                    Spacer(minLength: 0)
+                    // Status chip
+                    statusArea
+                        .padding(.trailing, 12)
+                }
+                .padding(.vertical, 12)
+                .padding(.leading, 10)
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: DSRadius.md))
-        .overlay(rowBorder)
-        .fixedSize(horizontal: false, vertical: true)  // ← auto height
+        .fixedSize(horizontal: false, vertical: true)
+        .clipShape(RoundedRectangle(cornerRadius: DSRadius.card))
+        .overlay(
+            RoundedRectangle(cornerRadius: DSRadius.card)
+                .strokeBorder(
+                    habit.isCompletedToday
+                        ? habit.accentColor.opacity(0.2)
+                        : Color.htBorderC,
+                    lineWidth: 0.5
+                )
+        )
         .scaleEffect(bouncing ? 0.97 : 1.0)
-        .animation(.spring(response: 0.25, dampingFraction: 0.6),
-                   value: bouncing)
+        .animation(DSAnim.fast, value: bouncing)
         .onTapGesture { handleTap() }
+        .onLongPressGesture(minimumDuration: 0.5) {
+            showingDetail = true
+        }
         .contextMenu { contextMenuItems }
         .sheet(isPresented: $showingDecoration) {
             DecorationPickerView(date: Date(), habit: habit)
         }
         .fullScreenCover(isPresented: $showingFocus) {
-            FocusTimerView(
-                habit: habit,
-                existingSession: activeFocusSession
-            )
+            FocusTimerView(habit: habit, existingSession: activeFocusSession)
+        }
+        .sheet(isPresented: $showingDetail) {
+            HabitDetailView(habit: habit)
         }
     }
 
-    // MARK: - Background layer
+    // MARK: - Avatar (40pt per spec)
 
-    @ViewBuilder
-    private var backgroundLayer: some View {
-        if habit.isCompletedToday {
-            RoundedRectangle(cornerRadius: DSRadius.md)
-                .fill(habit.accentColor.opacity(0.12))
-        } else if focusProgress > 0 {
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: DSRadius.md)
-                        .fill(Color.dsBackground)
-                    RoundedRectangle(cornerRadius: DSRadius.md)
-                        .fill(habit.accentColor.opacity(0.15))
-                        .frame(width: geo.size.width * focusProgress)
-                        .animation(.linear(duration: 1), value: focusProgress)
-                }
-            }
-        } else {
-            RoundedRectangle(cornerRadius: DSRadius.md)
-                .fill(Color.dsBackground)
-        }
-    }
-
-    // MARK: - Accent stripe
-
-    private var accentStripe: some View {
-        RoundedRectangle(cornerRadius: 3)
-            .fill(habit.isCompletedToday
-                  ? habit.accentColor
-                  : habit.accentColor.opacity(0.5))
-            .frame(width: 4)
-            .padding(.vertical, DSSpacing.sm)
-            .padding(.leading, DSSpacing.sm)
-    }
-
-    // MARK: - Avatar
-
-    private var avatarColumn: some View {
+    private var avatarView: some View {
         ZStack(alignment: .bottomTrailing) {
-            DSHabitAvatar(
-                emoji: habit.emoji,
-                color: habit.isCompletedToday
-                    ? habit.accentColor
-                    : habit.accentColor.opacity(0.7),
-                size: 44,
-                completed: habit.isCompletedToday
-            )
+            ZStack {
+                Circle()
+                    .fill(habit.accentColor.opacity(0.12))
+                    .frame(width: 40, height: 40)
 
-            if habit.isCompletedToday, let deco = decoration {
-                UniversalSticker(value: deco, fontSize: 16, outlineWidth: 1.5)
-                    .offset(x: 6, y: 6)
-            } else if focusProgress > 0 {
-                // Show focus progress ring overlay
-                ZStack {
-                    Circle()
-                        .stroke(Color.dsBorder, lineWidth: 2.5)
-                        .frame(width: 18, height: 18)
+                // Focus ring
+                if focusProgress > 0 {
                     Circle()
                         .trim(from: 0, to: focusProgress)
-                        .stroke(
-                            habit.accentColor,
-                            style: StrokeStyle(lineWidth: 2.5, lineCap: .round)
-                        )
+                        .stroke(habit.accentColor,
+                                style: StrokeStyle(
+                                    lineWidth: 2,
+                                    lineCap: .round
+                                ))
                         .rotationEffect(.degrees(-90))
-                        .frame(width: 18, height: 18)
-                        .animation(.linear(duration: 1), value: focusProgress)
+                        .frame(width: 40, height: 40)
+                        .animation(DSAnim.base, value: focusProgress)
                 }
-                .background(Color.dsBackground, in: Circle())
-                .offset(x: 6, y: 6)
+
+                Text(habit.emoji)
+                    .font(.system(size: 20))
+            }
+
+            // Decoration badge
+            if habit.isCompletedToday, let deco = decoration {
+                UniversalSticker(value: deco, fontSize: 13, outlineWidth: 1.5)
+                    .offset(x: 4, y: 4)
             }
         }
+        .frame(width: 46, height: 46)
     }
 
-    // MARK: - Info column
+    // MARK: - Content column
 
-    private var infoColumn: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            // Name row
-            HStack(spacing: DSSpacing.sm) {
-                Text(habit.name)
-                    .font(DSFont.bodyBold())
-                    .foregroundStyle(
-                        habit.isCompletedToday
-                            ? habit.accentColor
-                            : Color.dsPrimaryText
-                    )
-                    .strikethrough(habit.isCompletedToday,
-                                   color: habit.accentColor.opacity(0.6))
-                    .lineLimit(1)                    // ← max 1 line
-                    .truncationMode(.tail)           // ← truncate with ...
+    private var contentColumn: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            // Name
+            Text(habit.name)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(
+                    habit.isCompletedToday
+                        ? Color.htFgSecondary
+                        : Color.htFg
+                )
+                .strikethrough(habit.isCompletedToday,
+                               color: Color.htFgTertiary)
+                .lineLimit(1)
 
-                if habit.currentStreak > 1 {
-                    DSStreakBadge(streak: habit.currentStreak)
-                }
+            // Sublabel
+            sublabel
+
+            // Goal progress bar (amount / nTimes)
+            if let goal = habit.goal,
+               goal.type == .amount || goal.type == .nTimes {
+                DSProgressBar(
+                    value: habit.progressTowardGoal(),
+                    color: habit.accentColor,
+                    height: 3
+                )
+                .frame(maxWidth: 140)
             }
 
-            // Subtitle
-            if focusProgress > 0, let session = activeFocusSession {
-                HStack(spacing: 4) {
-                    Image(systemName: "timer")
-                        .font(.system(size: 10))
-                    Text("\(session.elapsedSeconds / 60)m / \(session.durationSeconds / 60)m · \(Int(focusProgress * 100))%")
-                        .font(DSFont.caption())
-                }
-                .foregroundStyle(habit.accentColor)
-            } else if !habit.habitDescription.isEmpty {
-                Text(habit.habitDescription)
-                    .font(DSFont.caption())
-                    .foregroundStyle(Color.dsLabel)
-                    .lineLimit(1)                    // ← max 1 line
-                    .truncationMode(.tail)
-            }
-
-            // Goal
-            if habit.goal != nil {
-                GoalProgressRow(habit: habit)
-            }
-
-            // Tags — max 2 + overflow
+            // Tags
             if !habit.tags.isEmpty {
                 HStack(spacing: 4) {
                     ForEach(habit.tags.prefix(2)) { tag in
-                        DSPill(text: tag.label, color: tag.color)
+                        HStack(spacing: 3) {
+                            Circle()
+                                .fill(tag.color)
+                                .frame(width: 4, height: 4)
+                            Text(tag.label)
+                                .font(.system(size: 10))
+                                .foregroundStyle(tag.color)
+                        }
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(tag.color.opacity(0.08), in: Capsule())
                     }
                     if habit.tags.count > 2 {
                         Text("+\(habit.tags.count - 2)")
-                            .font(DSFont.caption(10))
-                            .foregroundStyle(Color.dsLabel)
+                            .font(.system(size: 10))
+                            .foregroundStyle(Color.htFgTertiary)
                     }
                 }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)  // ← fill but don't overflow
     }
-    
-    // MARK: - Trailing column
 
-    private var trailingColumn: some View {
-        VStack(alignment: .trailing, spacing: DSSpacing.sm) {
-            DSPill(text: habit.frequencyLabel, color: Color.dsIndigo)
-
-            if habit.hasFocusTimer {
-                Image(systemName: focusProgress > 0 ? "timer" : "play.circle.fill")
-                    .font(.system(size: focusProgress > 0 ? 12 : 18,
-                                  weight: .semibold))
-                    .foregroundStyle(habit.accentColor)
-                    .padding(focusProgress > 0 ? 6 : 0)
-                    .background(
-                        focusProgress > 0
-                            ? habit.accentColor.opacity(0.1)
-                            : Color.clear,
-                        in: Circle()
-                    )
+    @ViewBuilder
+    private var sublabel: some View {
+        if focusProgress > 0, let session = activeFocusSession {
+            // Focus in progress
+            HStack(spacing: 4) {
+                Image(systemName: "timer")
+                    .font(.system(size: 9))
+                Text("\(session.elapsedSeconds / 60)m / \(session.durationSeconds / 60)m")
+                    .font(.system(size: 11))
+            }
+            .foregroundStyle(habit.accentColor)
+        } else if let goal = habit.goal {
+            // Goal sublabel
+            Text(habit.goalProgressLabel.isEmpty
+                 ? goal.displayTarget : habit.goalProgressLabel)
+                .font(.system(size: 11))
+                .foregroundStyle(Color.htFgSecondary)
+        } else {
+            // Frequency + optional focus duration
+            HStack(spacing: 4) {
+                Text(habit.frequencyLabel)
+                    .font(.system(size: 11))
+                    .foregroundStyle(Color.htFgSecondary)
+                if habit.hasFocusTimer {
+                    Text("·")
+                        .foregroundStyle(Color.htFgTertiary)
+                    Text("\(habit.focusDurationMinutes) min")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.htFgSecondary)
+                }
+                if habit.currentStreak > 1 {
+                    Text("·")
+                        .foregroundStyle(Color.htFgTertiary)
+                    Text("🔥 \(habit.currentStreak)")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.htFireFg)
+                }
             }
         }
     }
 
-    // MARK: - Border
+    // MARK: - Status area (right side)
 
-    private var rowBorder: some View {
-        RoundedRectangle(cornerRadius: DSRadius.md)
-            .strokeBorder(
-                habit.isCompletedToday
-                    ? habit.accentColor.opacity(0.3)
-                    : focusProgress > 0
-                        ? habit.accentColor.opacity(0.4)
-                        : Color.dsBorder,
-                lineWidth: 1
-            )
+    @ViewBuilder
+    private var statusArea: some View {
+        VStack(alignment: .trailing, spacing: 4) {
+            statusChip
+
+            // Focus timer icon
+            if habit.hasFocusTimer && !habit.isCompletedToday {
+                Image(systemName: "bolt.fill")
+                    .font(.system(size: 10))
+                    .foregroundStyle(Color.htFgTertiary)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var statusChip: some View {
+        if habit.isCompletedToday {
+            // Done chip
+            Text("Done")
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(Color.htDoneFg)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(Color.htDoneBg, in: Capsule())
+
+        } else if let goal = habit.goal, goal.type == .nTimes {
+            // Partial count chip e.g. "6 / 8"
+            let count = habit.completedDates.filter {
+                Calendar.current.isDateInToday($0)
+            }.count
+            Text("\(count) / \(goal.targetCount)")
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(Color.htPartialFg)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(Color.htPartialBg, in: Capsule())
+
+        } else if habit.hasFocusTimer && focusProgress > 0,
+                  let session = activeFocusSession {
+            // Timer chip e.g. "12 min"
+            Text("\(session.elapsedSeconds / 60) min")
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(Color.htPartialFg)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(Color.htPartialBg, in: Capsule())
+
+        } else {
+            // Pending chip
+            Text("Pending")
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(Color.htPendingFg)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(Color.htPendingBg, in: Capsule())
+                .overlay(
+                    Capsule().strokeBorder(Color.htBorderC, lineWidth: 0.5)
+                )
+        }
     }
 
     // MARK: - Context menu
 
     @ViewBuilder
     private var contextMenuItems: some View {
+        Button {
+            showingDetail = true
+        } label: {
+            Label("View detail", systemImage: "info.circle")
+        }
+        Button {
+            if !habit.isCompletedToday {
+                habit.toggleToday()
+                if habit.isCompletedToday {
+                    let toast = CompletionToast.make(for: habit)
+                    onCompleted?(toast)
+                    showingDecoration = true    // ← show decoration here too
+                }
+                WidgetCenter.shared.reloadAllTimelines()
+//                let toast = CompletionToast.make(for: habit)
+//                onCompleted?(toast)
+//                showingDecoration = true
+//                WidgetCenter.shared.reloadAllTimelines()
+            }
+        } label: {
+            Label(
+                habit.isCompletedToday ? "Completed" : "Mark complete",
+                systemImage: habit.isCompletedToday
+                    ? "checkmark.circle.fill" : "checkmark.circle"
+            )
+        }
+        .disabled(habit.isCompletedToday)
+
+        if habit.hasFocusTimer {
+            Button { showingFocus = true } label: {
+                Label("Focus timer", systemImage: "timer")
+            }
+        }
+
+        Divider()
+
         Button { onEdit?() } label: {
             Label("Edit", systemImage: "pencil")
         }
@@ -270,55 +359,67 @@ struct HabitRowView: View {
         }
     }
 
-    // MARK: - Tap handler
+    // MARK: - Tap
 
     private func handleTap() {
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
-            bouncing = true
-        }
+        // Capture state BEFORE any changes
+        let wasCompleted = habit.isCompletedToday
 
-        if habit.isCompletedToday {
-            // Already done — do nothing on tap
-            // User must swipe right to undo
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                bouncing = false
+        // If already done — do nothing, user must swipe to undo
+        guard !wasCompleted else { return }
+
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        withAnimation(DSAnim.fast) { bouncing = true }
+
+        if habit.hasFocusTimer {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                self.showingFocus = true
+                self.bouncing = false
             }
             return
         }
 
-        if habit.hasFocusTimer {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                showingFocus = true
-            }
-        } else if let goal = habit.goal, goal.type == .nTimes {
+        if let goal = habit.goal, goal.type == .nTimes {
             habit.completedDates.append(Date())
-            if habit.progressTowardGoal() >= 1.0 {
-                showingDecoration = true
+            let reached = habit.progressTowardGoal() >= 1.0
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                self.bouncing = false
+                if reached {
+                    let toast = CompletionToast.make(for: self.habit)
+                    self.onCompleted?(toast)
+                    self.showingDecoration = true   // ← only when goal reached
+                }
             }
         } else {
+            // Toggle → now completed
             habit.toggleToday()
-            showingDecoration = true
+            // Only show decoration if we just completed (not uncompleted)
+            if habit.isCompletedToday {
+                let toast = CompletionToast.make(for: habit)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                    self.bouncing = false
+                    self.onCompleted?(toast)
+                    self.showingDecoration = true   // ← only on completion
+                }
+            } else {
+                // Was somehow toggled back — no decoration
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                    self.bouncing = false
+                }
+            }
         }
 
         WidgetCenter.shared.reloadAllTimelines()
         checkMilestones(context: SharedStore.container.mainContext)
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            bouncing = false
-        }
     }
     
     @MainActor
-    func checkMilestones(context: ModelContext) -> Void {
-        let unlocks = MilestoneEngine.shared.check(
-            habit: habit, context: context
-        )
+    func checkMilestones(context: ModelContext) {
+        let unlocks = MilestoneEngine.shared.check(habit: habit, context: context)
         if !unlocks.isEmpty {
             onMilestoneUnlocked?(unlocks)
-            for unlock in unlocks {
-                NotificationManager.shared.scheduleMilestoneNotification(
-                    unlock: unlock
-                )
+            unlocks.forEach {
+                NotificationManager.shared.scheduleMilestoneNotification(unlock: $0)
             }
         }
     }

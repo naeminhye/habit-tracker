@@ -2,7 +2,7 @@
 //  GoalProgressView.swift
 //  HabitTracker
 //
-//  Created by JaceyNguyen on 20/04/2026.
+//  Created by BangChitty on 20/04/2026.
 //
 
 import SwiftUI

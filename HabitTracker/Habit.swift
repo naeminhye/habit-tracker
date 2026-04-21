@@ -17,7 +17,7 @@ final class Tag {
     }
     
     var color: Color {
-        Color(hex: colorHex)
+        Color(colorHex)
     }
 }
 
@@ -84,7 +84,7 @@ final class Habit {
     // MARK: - Accent color
     
     var accentColor: Color {
-        Color(hex: accentColorHex)
+        Color(accentColorHex)
     }
     
     // MARK: - Completion
